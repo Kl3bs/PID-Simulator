@@ -1,0 +1,228 @@
+<html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PID Simulator — Controle em Tempo Real</title>
+    
+    <!-- Bibliotecas Externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<style id="antigravity-scroll-lock-style">
+  html:root body.antigravity-scroll-lock {
+    overflow: hidden !important;
+  }
+</style></head>
+<body class="">
+    <div class="container">
+        <!-- ======================== HEADER ======================== -->
+        <div class="header" style="background: linear-gradient(135deg, rgb(13, 59, 89) 0%, rgb(26, 110, 138) 50%, rgb(13, 59, 89) 100%);">
+            <div>
+                <h1 id="header-title">Navio no Porto</h1>
+                <p class="header-subtitle">Atracação com Correntes Oceânicas</p>
+            </div>
+            <div style="display:flex; align-items:center; gap: 16px;">
+                <!-- Seletor de Fases -->
+                <div id="level-selector" class="level-selector">
+                    <!-- Gerado dinamicamente pelo LevelManager -->
+                </div>
+                <div class="level-badge" style="background: rgb(251, 86, 7);">FASE 3</div>
+            </div>
+        </div>
+
+        <!-- ======================== MAIN LAYOUT ======================== -->
+        <div class="main-layout">
+            
+            <!-- SIDEBAR ESQUERDA -->
+            <div class="control-panel">
+                <h2>Motor de Código</h2>
+
+                <!-- Editor de Código -->
+                <div id="mode-code" style="display: block;">
+                    <div class="control-group" style="padding:10px;">
+                        <p class="description" style="margin-bottom:8px;">
+                            Variáveis Injetadas: <code>error</code>, <code>integral</code>, 
+                            <code>derivative</code>, <code>velocity</code>, <code>position</code>, <code>disturbance</code>
+                        </p>
+                        <div class="code-editor-container">
+                            <textarea class="code-editor" id="custom-code" spellcheck="false">// Fase 1: Carro na Pista
+let kp = 0.5;
+let ki = 0.0;
+let kd = 0.0;
+
+let forca = (kp * error) + 
+            (ki * integral) + 
+            (kd * derivative);
+
+return forca;</textarea>
+                        </div>
+                        <div class="code-error" id="code-error" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Slider de Alvo -->
+                <div class="control-group">
+                    <div class="control-label">
+                        <span id="target-label">Posição do Cais (m)</span>
+                        <span class="control-value" id="target-value">300</span>
+                    </div>
+                    <input type="range" class="slider" id="target-slider" min="150" max="450" step="30" value="600">
+                </div>
+
+                <!-- Indicador de Perturbação -->
+                <div class="control-group disturbance-card" id="disturbance-panel" style="display: none;">
+                    <div class="control-label">
+                        <span>Perturbação Externa</span>
+                        <span class="control-value" id="disturbance-value" style="color:#ff6b6b;">13756.6 N</span>
+                    </div>
+                    <div class="disturbance-bar-wrapper">
+                        <div class="disturbance-bar" id="disturbance-bar" style="width: 100%; background: rgb(255, 68, 68); margin-left: 0px;"></div>
+                    </div>
+                    <p class="description" id="disturbance-desc" style="margin-top:6px;">🌊🌊🌊 Corrente intensa!</p>
+                </div>
+
+                <!-- Controles -->
+                <div class="buttons-group">
+                    <button class="btn btn-secondary" id="reset-btn">Reset</button>
+                    <button class="btn btn-primary" id="play-btn">PAUSA</button>
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT DIREITA -->
+            <div class="main-content">
+                
+                <!-- SIMULAÇÃO 3D -->
+                <div class="simulation-area">
+                    <div id="canvas-container"><canvas width="1203" height="326" style="display: block; width: 1203px; height: 326px;"></canvas></div>
+                </div>
+
+                <!-- STATS -->
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <div class="stat-label" id="stat-label-pos">Posição Lateral</div>
+                        <div class="stat-value"><span id="stat-pos">-445.3</span><span class="stat-unit" id="stat-unit-pos">m</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label" id="stat-label-vel">Vel. Lateral</div>
+                        <div class="stat-value"><span id="stat-vel">29.56</span><span class="stat-unit" id="stat-unit-vel">m/s</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label" id="stat-label-err">Desvio do Cais</div>
+                        <div class="stat-value"><span id="stat-err">745.8</span><span class="stat-unit" id="stat-unit-err">m</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label" id="stat-label-ctrl">Leme (Força)</div>
+                        <div class="stat-value"><span id="stat-force">673.24</span><span class="stat-unit" id="stat-unit-ctrl">N</span></div>
+                    </div>
+                </div>
+
+                <!-- TABS -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="chart">Comportamento Visual</button>
+                    <button class="tab-btn" data-tab="metrics">Métricas</button>
+                    <button class="tab-btn" data-tab="history">Histórico de Tentativas</button>
+                    <button class="tab-btn" data-tab="learn">Aprenda PID</button>
+                </div>
+
+                <!-- CHART TAB -->
+                <div class="tab-content active" id="chart">
+                    <div class="chart-container-inner">
+                        <canvas id="responseChart" width="1017" height="412" style="display: block; box-sizing: border-box; height: 228.889px; width: 565px;"></canvas>
+                    </div>
+                </div>
+
+                <!-- METRICS TAB -->
+                <div class="tab-content" id="metrics">
+                    <div class="metrics-grid">
+                        <div class="metric-card orange">
+                            <div class="metric-label">Tempo de Subida</div>
+                            <div class="metric-value orange" id="rise-time">5.97s</div>
+                        </div>
+                        <div class="metric-card green">
+                            <div class="metric-label">Overshoot (Ultrapassagem)</div>
+                            <div class="metric-value green" id="overshoot">263.0%</div>
+                        </div>
+                        <div class="metric-card yellow">
+                            <div class="metric-label">Regime Estacionário</div>
+                            <div class="metric-value yellow" id="final-error">745.76 u</div>
+                        </div>
+                        <div class="metric-card purple">
+                            <div class="metric-label">Tempo de Acomodação</div>
+                            <div class="metric-value purple" id="settling-time">Pendente...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HISTORY TAB -->
+                <div class="tab-content" id="history">
+                    <div class="history-container">
+                        <table class="history-table" id="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Run #</th>
+                                    <th>Fase</th>
+                                    <th>Subida (s)</th>
+                                    <th>Overshoot (%)</th>
+                                    <th>Acomod. (s)</th>
+                                    <th>Erro</th>
+                                    <th>Snippet Código</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- LEARN TAB -->
+                <div class="tab-content" id="learn">
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <h3>P (Proporcional)</h3>
+                            <p>Força proporcional ao erro atual. Acelera rapidamente no início, mas pode causar <em>Overshoot</em> se muito agressivo.</p>
+                        </div>
+                        <div class="info-card blue">
+                            <h3>I (Integral)</h3>
+                            <p>Memória do erro acumulado. Essencial para eliminar erros em regime estacionário e combater perturbações constantes como correntes oceânicas.</p>
+                        </div>
+                        <div class="info-card green">
+                            <h3>D (Derivativo)</h3>
+                            <p>Amortecedor preditivo. Reage à velocidade de variação do erro — fundamental para lidar com rajadas repentinas de vento.</p>
+                        </div>
+                    </div>
+                    <div class="learning-tip" id="level-tip" style="margin-top:15px;">A corrente é <strong>senoidal e persistente</strong>. Um Ki elevado é essencial para eliminar o erro em regime. Mas cuidado com o windup do integrador!</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== MÓDULOS ======================== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    
+    <script src="js/PhysicsEngine.js"></script>
+    <script src="js/Scene3D.js"></script>
+    <script src="js/SceneDrone.js"></script>
+    <script src="js/SceneShip.js"></script>
+    <script src="js/ChartAnalytics.js"></script>
+    <script src="js/CodeEditor.js"></script>
+    <script src="js/LevelManager.js"></script>
+    <script src="js/UIManager.js"></script>
+    
+    <!-- BOOTSTRAP -->
+    <script>
+        window.addEventListener('load', () => {
+            if (window.UIManager) window.UIManager.init();
+            if (window.ChartAnalytics) window.ChartAnalytics.init('responseChart');
+            if (window.LevelManager) window.LevelManager.init(); // Inicializa fases e ativa cena da fase 1
+        });
+    </script>
+
+<div id="preact-border-shadow-host" popover="manual" style="border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; padding: 0px; margin: 0px; inset: 0px; position: fixed; width: 100vw; height: 100vh; background: transparent; pointer-events: none;"></div></body></html>

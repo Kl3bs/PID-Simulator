@@ -1,0 +1,7 @@
+fastapi                         # para framework web
+uvicorn[standard]               # para servidor web
+pydantic-settings                 # para serialização de dados
+sqlalchemy                        # para ORM
+matplotlib                        # para gerar graficos
+numpy                             # para calculos
+python-dotenv                     # para carregar variáveis de ambiente
