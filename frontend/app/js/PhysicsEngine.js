@@ -42,7 +42,8 @@ window.SIM_STATE = {
     _oceanPhase: 0,
     
     // Histórico de Runs
-    runHistory: []
+    runHistory: [],
+    fullTelemetryData: []
 };
 
 window.PhysicsEngine = {
@@ -69,6 +70,7 @@ window.PhysicsEngine = {
         SIM_STATE._gustActive = false;
         SIM_STATE._baseWind = 2 + Math.random() * 3;
         SIM_STATE._oceanPhase = 0;
+        SIM_STATE.fullTelemetryData = [];
     },
 
     /**
@@ -257,27 +259,99 @@ window.PhysicsEngine = {
         }
         if (window.ChartAnalytics) window.ChartAnalytics.tick(timestamp, SIM_STATE.position, SIM_STATE.setPoint, error, force, externalDisturbance);
 
+        // Salva telemetria completa da simulação
+        if (!SIM_STATE.fullTelemetryData) SIM_STATE.fullTelemetryData = [];
+        SIM_STATE.fullTelemetryData.push({
+            time: parseFloat(SIM_STATE.simTime.toFixed(3)),
+            position: parseFloat(SIM_STATE.position.toFixed(3)),
+            setpoint: parseFloat(SIM_STATE.setPoint.toFixed(3)),
+            error: parseFloat(error.toFixed(3)),
+            force: parseFloat(force.toFixed(3)),
+            disturbance: parseFloat(externalDisturbance.toFixed(3))
+        });
+
         // === CONDIÇÃO DE VITÓRIA (estabilidade > 2s nas fases difíceis) ===
         const stableThreshold = SIM_STATE.currentLevel === 1 ? 1.5 : 2.5;
         if (SIM_STATE.settleStabilityTimer > stableThreshold) {
             SIM_STATE.isRunning = false;
             
-            const lvlName = window.LevelManager ? window.LevelManager.levels[SIM_STATE.currentLevel].name : `Fase ${SIM_STATE.currentLevel}`;
-            const runData = {
-                id: SIM_STATE.runHistory.length + 1,
-                level: lvlName,
-                riseTime: SIM_STATE.riseTime,
-                overshoot: overshootPercent,
-                settlingTime: SIM_STATE.timeOutsideTolerance,
-                finalError: error,
-                codeSnippet: (window.CodeEditor ? window.CodeEditor.getValue() : "").substring(0, 100) + '...'
-            };
-            SIM_STATE.runHistory.push(runData);
-            
             if (window.UIManager) {
                 window.UIManager.setPlayButtonState(false);
-                window.UIManager.updateHistoryUI();
             }
+
+            const lvlName = window.LevelManager ? window.LevelManager.levels[SIM_STATE.currentLevel].name : `Fase ${SIM_STATE.currentLevel}`;
+            const code = window.CodeEditor ? window.CodeEditor.getValue() : document.getElementById('custom-code').value;
+
+            // Solicita o nome do estudante para o relatório
+            let username = prompt("Simulação Estabilizada! Digite seu nome para gerar o relatório PDF:", "Estudante");
+            if (username === null) username = "Anônimo";
+            if (username.trim() === "") username = "Anônimo";
+
+            const payload = {
+                username: username,
+                level_name: lvlName,
+                rise_time: SIM_STATE.riseTime,
+                overshoot: overshootPercent,
+                settling_time: SIM_STATE.timeOutsideTolerance,
+                final_error: error,
+                code_snippet: code,
+                time_series: SIM_STATE.fullTelemetryData
+            };
+
+            // Envia os dados da run para o backend
+            fetch("http://localhost:8081/api/v1/runs/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Erro ao salvar simulação no backend.");
+                return res.json();
+            })
+            .then(data => {
+                // Adiciona a run com ID real do banco e score calculado
+                const runData = {
+                    id: data.id,
+                    score: data.score,
+                    level: lvlName,
+                    riseTime: SIM_STATE.riseTime,
+                    overshoot: overshootPercent,
+                    settlingTime: SIM_STATE.timeOutsideTolerance,
+                    finalError: error,
+                    codeSnippet: code
+                };
+                SIM_STATE.runHistory.push(runData);
+                
+                alert(`Simulação salva com sucesso! Pontuação obtida: ${data.score.toFixed(1)}/100.`);
+                
+                if (window.UIManager) {
+                    window.UIManager.updateHistoryUI();
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                // Fallback local se o backend estiver inacessível
+                const localId = SIM_STATE.runHistory.length + 1;
+                const runData = {
+                    id: `local_${localId}`,
+                    score: 0,
+                    level: lvlName,
+                    riseTime: SIM_STATE.riseTime,
+                    overshoot: overshootPercent,
+                    settlingTime: SIM_STATE.timeOutsideTolerance,
+                    finalError: error,
+                    codeSnippet: code
+                };
+                SIM_STATE.runHistory.push(runData);
+                alert("Não foi possível conectar com o backend. A rodada foi registrada apenas localmente.");
+                
+                if (window.UIManager) {
+                    window.UIManager.updateHistoryUI();
+                }
+            });
+
             return;
         }
 

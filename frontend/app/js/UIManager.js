@@ -194,6 +194,13 @@ window.UIManager = {
             const overshootText = run.overshoot.toFixed(1) + '%';
             const settlingTimeText = run.settlingTime.toFixed(2) + 's';
             const finalErrorText = Math.abs(run.finalError).toFixed(2);
+            
+            const isLocal = typeof run.id === 'string' && run.id.startsWith('local_');
+            const scoreText = isLocal ? '--' : `<strong>${run.score.toFixed(1)}</strong>`;
+            
+            const actionHtml = isLocal 
+                ? '<span style="color: #94a3b8; font-size: 0.9em;">Indisponível (Local)</span>' 
+                : `<a href="http://localhost:8081/api/v1/runs/${run.id}/report" class="btn-download" style="color: #1a6e8a; font-weight: bold; text-decoration: underline;" download>📄 Baixar PDF</a>`;
 
             row.innerHTML = `
                 <td><strong>Run #${run.id}</strong></td>
@@ -202,7 +209,8 @@ window.UIManager = {
                 <td>${overshootText}</td>
                 <td>${settlingTimeText}</td>
                 <td>${finalErrorText}</td>
-                <td class="code-snippet" title="${run.codeSnippet}">${run.codeSnippet}</td>
+                <td>${scoreText}</td>
+                <td>${actionHtml}</td>
             `;
             historyBody.appendChild(row);
         });
