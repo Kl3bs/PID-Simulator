@@ -554,3 +554,24 @@ body {
     letter-spacing: 0.3px;
     white-space: nowrap;
 }
+
+/* ===========================
+   HISTORY / CSV EXPORT
+=========================== */
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.history-title {
+    font-size: 1em;
+    color: #333;
+}
+
+.btn-export-csv {
+    padding: 8px 15px;
+    font-size: 0.8em;
+    flex: none;
+}

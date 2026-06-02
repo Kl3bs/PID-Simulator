@@ -282,13 +282,8 @@ window.PhysicsEngine = {
             const lvlName = window.LevelManager ? window.LevelManager.levels[SIM_STATE.currentLevel].name : `Fase ${SIM_STATE.currentLevel}`;
             const code = window.CodeEditor ? window.CodeEditor.getValue() : document.getElementById('custom-code').value;
 
-            // Solicita o nome do estudante para o relatório
-            let username = prompt("Simulação Estabilizada! Digite seu nome para gerar o relatório PDF:", "Estudante");
-            if (username === null) username = "Anônimo";
-            if (username.trim() === "") username = "Anônimo";
-
             const payload = {
-                username: username,
+                username: "pendente",
                 level_name: lvlName,
                 rise_time: SIM_STATE.riseTime,
                 overshoot: overshootPercent,
@@ -298,59 +293,11 @@ window.PhysicsEngine = {
                 time_series: SIM_STATE.fullTelemetryData
             };
 
-            // Envia os dados da run para o backend
-            fetch("http://localhost:8081/api/v1/runs/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(res => {
-                if (!res.ok) throw new Error("Erro ao salvar simulação no backend.");
-                return res.json();
-            })
-            .then(data => {
-                // Adiciona a run com ID real do banco e score calculado
-                const runData = {
-                    id: data.id,
-                    score: data.score,
-                    level: lvlName,
-                    riseTime: SIM_STATE.riseTime,
-                    overshoot: overshootPercent,
-                    settlingTime: SIM_STATE.timeOutsideTolerance,
-                    finalError: error,
-                    codeSnippet: code
-                };
-                SIM_STATE.runHistory.push(runData);
-                
-                alert(`Simulação salva com sucesso! Pontuação obtida: ${data.score.toFixed(1)}/100.`);
-                
-                if (window.UIManager) {
-                    window.UIManager.updateHistoryUI();
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                // Fallback local se o backend estiver inacessível
-                const localId = SIM_STATE.runHistory.length + 1;
-                const runData = {
-                    id: `local_${localId}`,
-                    score: 0,
-                    level: lvlName,
-                    riseTime: SIM_STATE.riseTime,
-                    overshoot: overshootPercent,
-                    settlingTime: SIM_STATE.timeOutsideTolerance,
-                    finalError: error,
-                    codeSnippet: code
-                };
-                SIM_STATE.runHistory.push(runData);
-                alert("Não foi possível conectar com o backend. A rodada foi registrada apenas localmente.");
-                
-                if (window.UIManager) {
-                    window.UIManager.updateHistoryUI();
-                }
-            });
+            if (window.UIManager && window.UIManager.showResultModal) {
+                window.UIManager.showResultModal(payload);
+            } else {
+                console.warn("UIManager.showResultModal não disponível. Simulação encerrada mas não salva.");
+            }
 
             return;
         }

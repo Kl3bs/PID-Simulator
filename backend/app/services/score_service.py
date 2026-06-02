@@ -55,3 +55,25 @@ def calculate_run_score(
 
     # Limita o score entre 0.0 e 100.0
     return max(0.0, min(100.0, round(score, 1)))
+
+def generate_diagnosis(metrics: dict, score: float) -> str:
+    """
+    Gera um diagnóstico pedagógico baseado nas métricas de desempenho.
+    """
+    overshoot = metrics.get('overshoot', 0.0)
+    settling_time = metrics.get('settling_time')
+    final_error = abs(metrics.get('final_error', 0.0))
+
+    if score >= 90.0:
+        return "Excelente controle! Seus parâmetros estão muito bem balanceados, apresentando resposta rápida e alta estabilidade."
+    
+    if overshoot > 25.0:
+        return "Kp muito alto (ou amortecimento fraco). O sistema ultrapassou demasiadamente a meta (overshoot excessivo). Tente reduzir o ganho proporcional (Kp) ou aumentar a ação derivativa (Kd) para frear a oscilação."
+    
+    if final_error > 3.0:
+        return "Erro de regime estacionário detectado. O sistema estabilizou, mas longe do alvo. Considere adicionar ou aumentar a ação integral (Ki) para eliminar esse offset residual."
+        
+    if settling_time is None or settling_time > 8.0:
+        return "Sistema instável ou muito lento para estabilizar. Verifique se o Kp não está muito baixo (causando lentidão extrema) ou se o ganho global não está induzindo oscilações contínuas."
+        
+    return "Bom desempenho geral. É possível tentar um ajuste fino (fine-tuning) nos parâmetros. Talvez aumentar um pouco o Kp para maior velocidade ou subir levemente o Kd para evitar pequenas turbulências."

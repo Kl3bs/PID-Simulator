@@ -3,6 +3,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import List, Optional
+import io
+import csv
 
 from app.api import deps
 from app.models.run import Run
@@ -25,7 +27,6 @@ def create_run(
     """
     user_id = None
     
-    # 1. Trata a criação/associação do usuário se fornecido
     if run_in.username:
         username_clean = run_in.username.strip()
         if username_clean:
@@ -37,7 +38,6 @@ def create_run(
                 db.refresh(user)
             user_id = user.id
 
-    # 2. Calcula a pontuação da simulação
     score = calculate_run_score(
         level_name=run_in.level_name,
         rise_time=run_in.rise_time,
@@ -46,10 +46,10 @@ def create_run(
         final_error=run_in.final_error
     )
 
-    # Convertendo a série temporal de Pydantic para Dict/List
+    # Converte a série temporal de Pydantic para Dict/List
     time_series_data = [pt.model_dump() for pt in run_in.time_series]
 
-    # 3. Cria a execução no banco
+    # Cria a execução no banco
     db_run = Run(
         user_id=user_id,
         level_name=run_in.level_name,
@@ -83,12 +83,11 @@ def get_run_report(
             detail="Simulação (run) não encontrada."
         )
 
-    # Identificar o nome do usuário associado
+    # Identifica o nome do usuário associado
     username = "Anônimo"
     if run.user:
         username = run.user.username
 
-    # Métricas formatadas para o gerador
     metrics = {
         "rise_time": run.rise_time,
         "overshoot": run.overshoot,
@@ -96,7 +95,6 @@ def get_run_report(
         "final_error": run.final_error
     }
 
-    # Gera os bytes do PDF
     pdf_buf = generate_pdf_report(
         run_id=run.id,
         username=username,
@@ -144,3 +142,46 @@ def get_leaderboard(
         })
         
     return leaderboard
+
+@router.get("/export")
+def export_runs(
+    username: Optional[str] = None,
+    db: Session = Depends(deps.get_db)
+):
+    """
+    Exporta o histórico de rodadas (runs) para o formato CSV.
+    Se o username for fornecido, filtra as rodadas desse usuário.
+    """
+    query = db.query(Run)
+    if username:
+        query = query.join(User).filter(User.username == username)
+    runs = query.order_by(desc(Run.created_at)).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Run ID", "Username", "Fase", "Tempo de Subida (s)", "Overshoot (%)",
+        "Tempo de Acomodacao (s)", "Erro Final", "Pontuacao", "Data"
+    ])
+
+    for r in runs:
+        uname = r.user.username if r.user else "Anônimo"
+        writer.writerow([
+            r.id,
+            uname,
+            r.level_name,
+            r.rise_time if r.rise_time is not None else "",
+            f"{r.overshoot:.2f}",
+            r.settling_time if r.settling_time is not None else "",
+            f"{r.final_error:.2f}",
+            f"{r.score:.2f}",
+            r.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=historico_runs.csv"}
+    )
+

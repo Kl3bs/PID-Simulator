@@ -98,6 +98,51 @@ window.UIManager = {
     } catch (e) {
       console.error("Erro ao inicializar CodeMirror:", e);
     }
+
+    // Modal - Exportar CSV
+    const exportBtn = document.getElementById("export-csv-btn");
+    if (exportBtn) {
+      exportBtn.addEventListener("click", () => {
+        const username = prompt("Digite seu username para exportar seu histórico (deixe em branco para exportar todos):", "");
+        if (username !== null) {
+          let url = "http://localhost:8081/api/v1/runs/export";
+          if (username.trim() !== "") {
+            url += "?username=" + encodeURIComponent(username.trim());
+          }
+          window.open(url, "_blank");
+        }
+      });
+    }
+
+    // Modal - Salvar Localmente
+    const btnSaveOnly = document.getElementById("modal-btn-save-only");
+    if (btnSaveOnly) {
+      btnSaveOnly.addEventListener("click", () => {
+        this.hideResultModal();
+        if (this._modalPendingPayload) {
+          this.saveRunLocal(this._modalPendingPayload);
+        }
+      });
+    }
+
+    // Modal - Salvar e Gerar Relatório
+    const btnSaveReport = document.getElementById("modal-btn-save-report");
+    if (btnSaveReport) {
+      btnSaveReport.addEventListener("click", () => {
+        const usernameInput = document.getElementById("modal-username");
+        let username = usernameInput ? usernameInput.value.trim() : "";
+        if (!username) username = "Anônimo";
+        
+        this.hideResultModal();
+        if (this._modalPendingPayload) {
+          this._modalPendingPayload.username = username;
+          this.submitRunToBackend(this._modalPendingPayload);
+        }
+      });
+    }
+
+    // Inicializa Leaderboard
+    this.updateLeaderboardUI();
   },
 
   setPlayButtonState: function (isRunning) {
@@ -225,4 +270,111 @@ window.UIManager = {
       historyBody.appendChild(row);
     });
   },
+
+  _modalPendingPayload: null,
+
+  showResultModal: function(payload) {
+    this._modalPendingPayload = payload;
+    const modal = document.getElementById("result-modal");
+    if (modal) {
+        modal.style.display = "flex";
+        
+        // Simular o cálculo do score localmente para exibir uma prévia no modal
+        let simulatedScore = 100;
+        if (payload.overshoot > 5) simulatedScore -= payload.overshoot * 0.5;
+        if (payload.settling_time > 5) simulatedScore -= payload.settling_time * 2;
+        simulatedScore = Math.max(0, Math.min(100, simulatedScore));
+        
+        const scoreEl = document.getElementById("modal-score-value");
+        if (scoreEl) scoreEl.innerText = simulatedScore.toFixed(1) + "/100";
+    }
+  },
+
+  hideResultModal: function() {
+    const modal = document.getElementById("result-modal");
+    if (modal) modal.style.display = "none";
+  },
+
+  saveRunLocal: function(payload) {
+    const runData = {
+        id: `local_${window.SIM_STATE.runHistory.length + 1}`,
+        score: 0,
+        level: payload.level_name,
+        riseTime: payload.rise_time,
+        overshoot: payload.overshoot,
+        settlingTime: payload.settling_time,
+        finalError: payload.final_error,
+        codeSnippet: payload.code_snippet
+    };
+    window.SIM_STATE.runHistory.push(runData);
+    this.updateHistoryUI();
+  },
+
+  submitRunToBackend: function(payload) {
+    fetch("http://localhost:8081/api/v1/runs/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Erro ao salvar simulação no backend.");
+        return res.json();
+    })
+    .then(data => {
+        const runData = {
+            id: data.id,
+            score: data.score,
+            level: payload.level_name,
+            riseTime: payload.rise_time,
+            overshoot: payload.overshoot,
+            settlingTime: payload.settling_time,
+            finalError: payload.final_error,
+            codeSnippet: payload.code_snippet
+        };
+        window.SIM_STATE.runHistory.push(runData);
+        this.updateHistoryUI();
+        this.updateLeaderboardUI();
+        
+        // Dispara o download automático do PDF
+        window.location.href = `http://localhost:8081/api/v1/runs/${data.id}/report`;
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Falha na conexão com o backend. A rodada será salva localmente.");
+        this.saveRunLocal(payload);
+    });
+  },
+
+  updateLeaderboardUI: function() {
+    fetch("http://localhost:8081/api/v1/runs/leaderboard")
+    .then(res => {
+        if (!res.ok) throw new Error("Leaderboard falhou");
+        return res.json();
+    })
+    .then(data => {
+        const lbBody = document.getElementById("leaderboard-body");
+        if (!lbBody) return;
+        lbBody.innerHTML = "";
+        
+        data.forEach((entry, index) => {
+            const row = document.createElement("tr");
+            let posMedal = `${index + 1}º`;
+            if (index === 0) posMedal = "🥇 1º";
+            if (index === 1) posMedal = "🥈 2º";
+            if (index === 2) posMedal = "🥉 3º";
+            
+            const dateStr = new Date(entry.created_at).toLocaleDateString('pt-BR');
+            
+            row.innerHTML = `
+                <td><strong>${posMedal}</strong></td>
+                <td>${entry.username}</td>
+                <td><span class="run-level-badge">${entry.level_name}</span></td>
+                <td><strong>${entry.score.toFixed(1)}</strong></td>
+                <td>${dateStr}</td>
+            `;
+            lbBody.appendChild(row);
+        });
+    })
+    .catch(err => console.error("Erro ao carregar leaderboard:", err));
+  }
 };

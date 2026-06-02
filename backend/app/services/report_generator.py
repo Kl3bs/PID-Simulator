@@ -11,6 +11,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
+from app.services.score_service import generate_diagnosis
+
 def generate_chart(time_series: List[Dict[str, Any]]) -> io.BytesIO:
     """
     Gera o gráfico da simulação usando matplotlib e retorna em um buffer de memória (BytesIO).
@@ -184,6 +186,20 @@ def generate_pdf_report(
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
     ]))
     elements.append(metrics_table)
+    elements.append(Spacer(1, 15))
+
+    # Diagnóstico Automático
+    elements.append(Paragraph("Diagnóstico Pedagógico do Controlador", section_style))
+    diagnosis_text = generate_diagnosis(metrics, score)
+    
+    diagnosis_table = Table([[Paragraph(diagnosis_text, body_style)]], colWidths=[530])
+    diagnosis_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F4F7F9')),
+        ('PADDING', (0,0), (-1,-1), 12),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#1A6E8A')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    elements.append(diagnosis_table)
     elements.append(Spacer(1, 15))
 
     # 4. Gráfico de Resposta Temporal (Gerado com matplotlib)
