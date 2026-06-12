@@ -21,7 +21,6 @@ services:
     env: static
     plan: free
     buildCommand: ""
-    staticPublishPath: ./frontend/app
 
 databases:
   # 3. PostgreSQL Database
