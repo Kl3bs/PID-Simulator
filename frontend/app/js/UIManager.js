@@ -4,6 +4,12 @@
     Suporta múltiplas fases com labels dinâmicas e painel de perturbação.
 */
 
+// Detecta se está rodando localmente ou em produção (Render)
+// TODO: Substitua 'sua-api.onrender.com' pelo link final do seu Web Service no Render
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:8081' 
+    : 'https://sketch-1-backend.onrender.com';
+
 window.UIManager = {
   init: function () {
     // Slider de alvo (meta / altitude / posição do cais)
@@ -124,7 +130,7 @@ window.UIManager = {
         }
 
         if (username !== null) {
-          let url = "http://localhost:8081/api/v1/runs/export";
+          let url = `${API_BASE_URL}/api/v1/runs/export`;
           let hasQuery = false;
           
           if (username.trim() !== "") {
@@ -229,7 +235,7 @@ window.UIManager = {
 
   loginUser: function (username) {
     fetch(
-      `http://localhost:8081/api/v1/runs/?username=${encodeURIComponent(username)}`,
+      `${API_BASE_URL}/api/v1/runs/?username=${encodeURIComponent(username)}`,
     )
       .then((res) => {
         if (!res.ok) throw new Error("Erro ao buscar histórico");
@@ -434,7 +440,7 @@ window.UIManager = {
 
       const actionHtml = isLocal
         ? '<span style="color: #94a3b8; font-size: 0.9em;">Indisponível (Local)</span>'
-        : `<a href="http://localhost:8081/api/v1/runs/${run.id}/report" class="btn-download" style="color: #1a6e8a; font-weight: bold; text-decoration: underline;" download> Baixar PDF</a>`;
+        : `<a href="${API_BASE_URL}/api/v1/runs/${run.id}/report" class="btn-download" style="color: #1a6e8a; font-weight: bold; text-decoration: underline;" download> Baixar PDF</a>`;
 
       row.innerHTML = `
                 <td><input type="radio" name="export_run_id" value="${run.id}" style="cursor: pointer;"></td>
@@ -532,7 +538,7 @@ window.UIManager = {
   },
 
   submitRunToBackend: function (payload) {
-    fetch("http://localhost:8081/api/v1/runs/", {
+    fetch(`${API_BASE_URL}/api/v1/runs/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -557,7 +563,7 @@ window.UIManager = {
         this.updateLeaderboardUI();
 
         // Dispara o download automático do PDF
-        window.location.href = `http://localhost:8081/api/v1/runs/${data.id}/report`;
+        window.location.href = `${API_BASE_URL}/api/v1/runs/${data.id}/report`;
       })
       .catch((err) => {
         console.error(err);
@@ -569,7 +575,7 @@ window.UIManager = {
   },
 
   updateLeaderboardUI: function () {
-    fetch("http://localhost:8081/api/v1/runs/leaderboard")
+    fetch(`${API_BASE_URL}/api/v1/runs/leaderboard`)
       .then((res) => {
         if (!res.ok) throw new Error("Leaderboard falhou");
         return res.json();

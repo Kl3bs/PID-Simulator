@@ -1,0 +1,31 @@
+services:
+  # 1. Back-end Web Service (FastAPI)
+  - type: web
+    name: sketch-1-backend
+    env: docker
+    region: ohio
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sketch-1-db
+          property: connectionString
+
+  # 2. Front-end Static Site
+  - type: web
+    name: sketch-1-frontend
+    env: static
+    region: ohio
+    plan: free
+    buildCommand: ""  # Não há build step, são apenas arquivos estáticos
+    staticPublishPath: ./frontend/app
+
+databases:
+  # 3. PostgreSQL Database
+  - name: sketch-1-db
+    databaseName: pid_simulator
+    user: pid_user
+    region: ohio
+    plan: free
