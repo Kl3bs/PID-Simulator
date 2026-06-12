@@ -1,6 +1,7 @@
 services:
   # 1. Back-end Web Service (FastAPI)
   - type: web
+    runtime: docker
     name: sketch-1-backend
     env: docker
     region: ohio
@@ -15,6 +16,7 @@ services:
 
   # 2. Front-end Static Site
   - type: web
+    runtime: docker
     name: sketch-1-frontend
     env: static
     plan: free
