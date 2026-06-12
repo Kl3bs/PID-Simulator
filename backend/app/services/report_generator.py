@@ -13,9 +13,10 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 from app.services.score_service import generate_diagnosis
 
-def generate_chart(time_series: List[Dict[str, Any]]) -> io.BytesIO:
+def generate_chart(time_series: List[Dict[str, Any]], prev_time_series: List[Dict[str, Any]] = None) -> io.BytesIO:
     """
     Gera o gráfico da simulação usando matplotlib e retorna em um buffer de memória (BytesIO).
+    Se prev_time_series for fornecido, adiciona a tentativa anterior para comparação.
     """
     times = [p["time"] for p in time_series]
     positions = [p["position"] for p in time_series]
@@ -29,12 +30,18 @@ def generate_chart(time_series: List[Dict[str, Any]]) -> io.BytesIO:
 
     # Gráfico Superior: Posição, Setpoint e Erro
     ax1.set_facecolor('#FAFAFB')
-    ax1.plot(times, positions, label="Posição", color="#04A777", linewidth=2)
+    ax1.plot(times, positions, label="Posição (Atual)", color="#04A777", linewidth=2)
+    
+    if prev_time_series:
+        prev_times = [p["time"] for p in prev_time_series]
+        prev_positions = [p["position"] for p in prev_time_series]
+        ax1.plot(prev_times, prev_positions, label="Posição (Tentativa Anterior)", color="#94A3B8", linewidth=1.5, linestyle="-.", alpha=0.7)
+
     ax1.plot(times, setpoints, label="Meta (Setpoint)", color="#1A1A2E", linestyle="--", linewidth=1.5)
     ax1.plot(times, errors, label="Erro", color="#FFB703", linewidth=1, alpha=0.8)
     ax1.set_ylabel("Posição / Erro (m)")
     ax1.grid(True, linestyle=":", alpha=0.6, color="#CCCCCC")
-    ax1.legend(loc="upper right", framealpha=0.9, facecolor='#FFFFFF')
+    ax1.legend(loc="upper right", framealpha=0.9, facecolor='#FFFFFF', fontsize='small')
     ax1.set_title("Comportamento do Sistema PID", fontsize=12, color="#0D3B59", fontweight="bold")
 
     # Gráfico Inferior: Ação de Controle (Força) e Perturbações
@@ -55,6 +62,50 @@ def generate_chart(time_series: List[Dict[str, Any]]) -> io.BytesIO:
     plt.close(fig)
     return img_buf
 
+def generate_error_chart(time_series: List[Dict[str, Any]]) -> io.BytesIO:
+    """
+    Gera gráficos da evolução do IAE, ISE e ITAE ao longo do tempo.
+    """
+    times = [p["time"] for p in time_series]
+    errors = [p["error"] for p in time_series]
+
+    iae_list = [0.0]
+    ise_list = [0.0]
+    itae_list = [0.0]
+    for i in range(1, len(times)):
+        dt = times[i] - times[i-1]
+        e = abs(errors[i])
+        iae_list.append(iae_list[-1] + e * dt)
+        ise_list.append(ise_list[-1] + (e * e) * dt)
+        itae_list.append(itae_list[-1] + times[i] * e * dt)
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 7), sharex=True)
+    fig.patch.set_facecolor('#FCFCFD')
+
+    ax1.set_facecolor('#FAFAFB')
+    ax1.plot(times, iae_list, color="#04A777", linewidth=2)
+    ax1.set_ylabel("IAE")
+    ax1.grid(True, linestyle=":", alpha=0.6, color="#CCCCCC")
+    ax1.set_title("Evolução do Erro Acumulado (IAE, ISE e ITAE)", fontsize=12, color="#0D3B59", fontweight="bold")
+
+    ax2.set_facecolor('#FAFAFB')
+    ax2.plot(times, ise_list, color="#D90429", linewidth=2)
+    ax2.set_ylabel("ISE")
+    ax2.grid(True, linestyle=":", alpha=0.6, color="#CCCCCC")
+
+    ax3.set_facecolor('#FAFAFB')
+    ax3.plot(times, itae_list, color="#1A6E8A", linewidth=2)
+    ax3.set_ylabel("ITAE")
+    ax3.set_xlabel("Tempo (s)")
+    ax3.grid(True, linestyle=":", alpha=0.6, color="#CCCCCC")
+
+    plt.tight_layout()
+    img_buf = io.BytesIO()
+    plt.savefig(img_buf, format="png", dpi=150, facecolor=fig.get_facecolor())
+    img_buf.seek(0)
+    plt.close(fig)
+    return img_buf
+
 def generate_pdf_report(
     run_id: int,
     username: str,
@@ -63,7 +114,8 @@ def generate_pdf_report(
     score: float,
     code_snippet: str,
     time_series: List[Dict[str, Any]],
-    created_at: datetime
+    created_at: datetime,
+    prev_time_series: List[Dict[str, Any]] = None
 ) -> io.BytesIO:
     """
     Gera o relatório profissional em formato PDF e retorna os bytes em um buffer de memória.
@@ -186,6 +238,30 @@ def generate_pdf_report(
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
     ]))
     elements.append(metrics_table)
+    elements.append(Spacer(1, 10))
+
+    iae_val = f"{metrics.get('iae'):.2f}" if metrics.get('iae') is not None else "--"
+    ise_val = f"{metrics.get('ise'):.2f}" if metrics.get('ise') is not None else "--"
+    itae_val = f"{metrics.get('itae'):.2f}" if metrics.get('itae') is not None else "--"
+
+    integral_metrics_data = [
+        ["IAE (Erro Absoluto)", "ISE (Erro Quadrático)", "ITAE (Erro x Tempo)"],
+        [iae_val, ise_val, itae_val]
+    ]
+
+    integral_table = Table(integral_metrics_data, colWidths=[176, 177, 177])
+    integral_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1A6E8A')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('PADDING', (0,0), (-1,-1), 8),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 9),
+        ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#F4F7F9')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+    ]))
+    elements.append(integral_table)
     elements.append(Spacer(1, 15))
 
     # Diagnóstico Automático
@@ -204,10 +280,17 @@ def generate_pdf_report(
 
     # 4. Gráfico de Resposta Temporal (Gerado com matplotlib)
     elements.append(Paragraph("Gráficos de Comportamento Dinâmico", section_style))
-    chart_buf = generate_chart(time_series)
+    chart_buf = generate_chart(time_series, prev_time_series)
     chart_image = Image(chart_buf, width=480, height=360)
     chart_image.hAlign = 'CENTER'
     elements.append(chart_image)
+    elements.append(Spacer(1, 15))
+    
+    # Gráficos das Métricas Integrais
+    error_chart_buf = generate_error_chart(time_series)
+    error_chart_image = Image(error_chart_buf, width=480, height=420)
+    error_chart_image.hAlign = 'CENTER'
+    elements.append(error_chart_image)
     elements.append(Spacer(1, 15))
 
     # 5. Código do Algoritmo PID do Usuário (KeepTogether para evitar quebra de página)

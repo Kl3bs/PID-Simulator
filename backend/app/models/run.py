@@ -13,6 +13,9 @@ class Run(Base):
     overshoot = Column(Float, nullable=False)
     settling_time = Column(Float, nullable=True)
     final_error = Column(Float, nullable=False)
+    iae = Column(Float, nullable=True)
+    ise = Column(Float, nullable=True)
+    itae = Column(Float, nullable=True)
     
     # Desempenho
     score = Column(Float, nullable=False)

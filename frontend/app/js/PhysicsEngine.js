@@ -13,6 +13,10 @@ window.SIM_STATE = {
     lastError: 0,
     lastTime: 0,
     
+    iae: 0,
+    ise: 0,
+    itae: 0,
+    
     setPoint: 600,
     mass: 50,
     friction: 2,
@@ -56,6 +60,10 @@ window.PhysicsEngine = {
         SIM_STATE.lastError = SIM_STATE.setPoint;
         SIM_STATE.lastTime = 0;
         SIM_STATE.disturbance = 0;
+        
+        SIM_STATE.iae = 0;
+        SIM_STATE.ise = 0;
+        SIM_STATE.itae = 0;
         
         SIM_STATE.simTime = 0;
         SIM_STATE.maxPos = 0;
@@ -168,6 +176,11 @@ window.PhysicsEngine = {
         let derivative = (error - SIM_STATE.lastError) / dt;
         SIM_STATE.lastError = error;
 
+        // Calcula métricas de erro integral
+        SIM_STATE.iae += Math.abs(error) * dt;
+        SIM_STATE.ise += (error * error) * dt;
+        SIM_STATE.itae += SIM_STATE.simTime * Math.abs(error) * dt;
+
         // === EXECUTA CÓDIGO DO USUÁRIO ===
         if (SIM_STATE.useCodeMode) {
             try {
@@ -250,7 +263,10 @@ window.PhysicsEngine = {
                 overshootPercent, 
                 SIM_STATE.timeOutsideTolerance, 
                 error, 
-                SIM_STATE.velocity
+                SIM_STATE.velocity,
+                SIM_STATE.iae,
+                SIM_STATE.ise,
+                SIM_STATE.itae
             );
             // Mostra perturbação na UI se disponível
             if (window.UIManager.updateDisturbance) {
@@ -289,6 +305,9 @@ window.PhysicsEngine = {
                 overshoot: overshootPercent,
                 settling_time: SIM_STATE.timeOutsideTolerance,
                 final_error: error,
+                iae: SIM_STATE.iae,
+                ise: SIM_STATE.ise,
+                itae: SIM_STATE.itae,
                 code_snippet: code,
                 time_series: SIM_STATE.fullTelemetryData
             };

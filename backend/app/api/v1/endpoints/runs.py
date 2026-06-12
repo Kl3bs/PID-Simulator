@@ -57,6 +57,9 @@ def create_run(
         overshoot=run_in.overshoot,
         settling_time=run_in.settling_time,
         final_error=run_in.final_error,
+        iae=run_in.iae,
+        ise=run_in.ise,
+        itae=run_in.itae,
         score=score,
         code_snippet=run_in.code_snippet,
         time_series=time_series_data
@@ -83,16 +86,27 @@ def get_run_report(
             detail="Simulação (run) não encontrada."
         )
 
-    # Identifica o nome do usuário associado
+    # Identifica o nome do usuário associado e busca a tentativa anterior
     username = "Anônimo"
+    prev_time_series = None
     if run.user:
         username = run.user.username
+        prev_run = db.query(Run).filter(
+            Run.user_id == run.user_id,
+            Run.level_name == run.level_name,
+            Run.id < run.id
+        ).order_by(desc(Run.id)).first()
+        if prev_run:
+            prev_time_series = prev_run.time_series
 
     metrics = {
         "rise_time": run.rise_time,
         "overshoot": run.overshoot,
         "settling_time": run.settling_time,
-        "final_error": run.final_error
+        "final_error": run.final_error,
+        "iae": run.iae,
+        "ise": run.ise,
+        "itae": run.itae
     }
 
     pdf_buf = generate_pdf_report(
@@ -103,7 +117,8 @@ def get_run_report(
         score=run.score,
         code_snippet=run.code_snippet,
         time_series=run.time_series,
-        created_at=run.created_at
+        created_at=run.created_at,
+        prev_time_series=prev_time_series
     )
 
     filename = f"relatorio_run_{run.id}.pdf"
@@ -146,27 +161,32 @@ def get_leaderboard(
 @router.get("/export")
 def export_runs(
     username: Optional[str] = None,
+    run_id: Optional[int] = None,
     db: Session = Depends(deps.get_db)
 ):
     """
     Exporta o histórico de rodadas (runs) para o formato CSV.
     Se o username for fornecido, filtra as rodadas desse usuário.
+    Se run_id for fornecido, exporta apenas essa rodada específica.
     """
     query = db.query(Run)
     if username:
         query = query.join(User).filter(User.username == username)
+    if run_id:
+        query = query.filter(Run.id == run_id)
     runs = query.order_by(desc(Run.created_at)).all()
 
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
         "Run ID", "Username", "Fase", "Tempo de Subida (s)", "Overshoot (%)",
-        "Tempo de Acomodacao (s)", "Erro Final", "Pontuacao", "Data"
+        "Tempo de Acomodacao (s)", "Erro Final", "Pontuacao", "Data",
+        "Tempo (s)", "Posicao", "Setpoint", "Erro", "Forca", "Perturbacao"
     ])
 
     for r in runs:
         uname = r.user.username if r.user else "Anônimo"
-        writer.writerow([
+        run_meta = [
             r.id,
             uname,
             r.level_name,
@@ -176,7 +196,21 @@ def export_runs(
             f"{r.final_error:.2f}",
             f"{r.score:.2f}",
             r.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        ])
+        ]
+        
+        if not r.time_series:
+            writer.writerow(run_meta + ["", "", "", "", ""])
+            continue
+            
+        for pt in r.time_series:
+            writer.writerow(run_meta + [
+                f"{pt.get('time', 0.0):.3f}",
+                f"{pt.get('position', 0.0):.3f}",
+                f"{pt.get('setpoint', 0.0):.3f}",
+                f"{pt.get('error', 0.0):.3f}",
+                f"{pt.get('force', 0.0):.3f}",
+                f"{pt.get('disturbance', 0.0):.3f}"
+            ])
 
     output.seek(0)
     return StreamingResponse(
@@ -184,4 +218,19 @@ def export_runs(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=historico_runs.csv"}
     )
+
+@router.get("/", response_model=List[schemas.RunResponse])
+def get_runs(
+    username: str,
+    db: Session = Depends(deps.get_db)
+):
+    """
+    Retorna o histórico de rodadas (runs) para um usuário específico.
+    """
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        return []
+    
+    runs = db.query(Run).filter(Run.user_id == user.id).order_by(desc(Run.created_at)).all()
+    return runs
 

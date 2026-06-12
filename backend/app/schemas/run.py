@@ -17,6 +17,9 @@ class RunCreate(BaseModel):
     overshoot: float
     settling_time: Optional[float] = None
     final_error: float
+    iae: Optional[float] = None
+    ise: Optional[float] = None
+    itae: Optional[float] = None
     code_snippet: str
     time_series: List[TimeSeriesPoint]
 
@@ -28,6 +31,9 @@ class RunResponse(BaseModel):
     overshoot: float
     settling_time: Optional[float] = None
     final_error: float
+    iae: Optional[float] = None
+    ise: Optional[float] = None
+    itae: Optional[float] = None
     score: float
     code_snippet: str
     time_series: List[TimeSeriesPoint]
