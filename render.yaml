@@ -17,9 +17,8 @@ services:
   - type: web
     name: sketch-1-frontend
     env: static
-    region: ohio
     plan: free
-    buildCommand: ""  # Não há build step, são apenas arquivos estáticos
+    buildCommand: ""
     staticPublishPath: ./frontend/app
 
 databases:
