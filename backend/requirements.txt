@@ -5,3 +5,5 @@ sqlalchemy                        # para ORM
 matplotlib                        # para gerar graficos
 numpy                             # para calculos
 python-dotenv                     # para carregar variáveis de ambiente
+psycopg2-binary                   # para conectar com o PostgreSQL
+reportlab                         # para gerar relatórios PDF

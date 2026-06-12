@@ -13,6 +13,10 @@ window.SIM_STATE = {
     lastError: 0,
     lastTime: 0,
     
+    iae: 0,
+    ise: 0,
+    itae: 0,
+    
     setPoint: 600,
     mass: 50,
     friction: 2,
@@ -42,7 +46,8 @@ window.SIM_STATE = {
     _oceanPhase: 0,
     
     // Histórico de Runs
-    runHistory: []
+    runHistory: [],
+    fullTelemetryData: []
 };
 
 window.PhysicsEngine = {
@@ -55,6 +60,10 @@ window.PhysicsEngine = {
         SIM_STATE.lastError = SIM_STATE.setPoint;
         SIM_STATE.lastTime = 0;
         SIM_STATE.disturbance = 0;
+        
+        SIM_STATE.iae = 0;
+        SIM_STATE.ise = 0;
+        SIM_STATE.itae = 0;
         
         SIM_STATE.simTime = 0;
         SIM_STATE.maxPos = 0;
@@ -69,6 +78,7 @@ window.PhysicsEngine = {
         SIM_STATE._gustActive = false;
         SIM_STATE._baseWind = 2 + Math.random() * 3;
         SIM_STATE._oceanPhase = 0;
+        SIM_STATE.fullTelemetryData = [];
     },
 
     /**
@@ -166,6 +176,11 @@ window.PhysicsEngine = {
         let derivative = (error - SIM_STATE.lastError) / dt;
         SIM_STATE.lastError = error;
 
+        // Calcula métricas de erro integral
+        SIM_STATE.iae += Math.abs(error) * dt;
+        SIM_STATE.ise += (error * error) * dt;
+        SIM_STATE.itae += SIM_STATE.simTime * Math.abs(error) * dt;
+
         // === EXECUTA CÓDIGO DO USUÁRIO ===
         if (SIM_STATE.useCodeMode) {
             try {
@@ -248,7 +263,10 @@ window.PhysicsEngine = {
                 overshootPercent, 
                 SIM_STATE.timeOutsideTolerance, 
                 error, 
-                SIM_STATE.velocity
+                SIM_STATE.velocity,
+                SIM_STATE.iae,
+                SIM_STATE.ise,
+                SIM_STATE.itae
             );
             // Mostra perturbação na UI se disponível
             if (window.UIManager.updateDisturbance) {
@@ -257,27 +275,49 @@ window.PhysicsEngine = {
         }
         if (window.ChartAnalytics) window.ChartAnalytics.tick(timestamp, SIM_STATE.position, SIM_STATE.setPoint, error, force, externalDisturbance);
 
+        // Salva telemetria completa da simulação
+        if (!SIM_STATE.fullTelemetryData) SIM_STATE.fullTelemetryData = [];
+        SIM_STATE.fullTelemetryData.push({
+            time: parseFloat(SIM_STATE.simTime.toFixed(3)),
+            position: parseFloat(SIM_STATE.position.toFixed(3)),
+            setpoint: parseFloat(SIM_STATE.setPoint.toFixed(3)),
+            error: parseFloat(error.toFixed(3)),
+            force: parseFloat(force.toFixed(3)),
+            disturbance: parseFloat(externalDisturbance.toFixed(3))
+        });
+
         // === CONDIÇÃO DE VITÓRIA (estabilidade > 2s nas fases difíceis) ===
         const stableThreshold = SIM_STATE.currentLevel === 1 ? 1.5 : 2.5;
         if (SIM_STATE.settleStabilityTimer > stableThreshold) {
             SIM_STATE.isRunning = false;
             
-            const lvlName = window.LevelManager ? window.LevelManager.levels[SIM_STATE.currentLevel].name : `Fase ${SIM_STATE.currentLevel}`;
-            const runData = {
-                id: SIM_STATE.runHistory.length + 1,
-                level: lvlName,
-                riseTime: SIM_STATE.riseTime,
-                overshoot: overshootPercent,
-                settlingTime: SIM_STATE.timeOutsideTolerance,
-                finalError: error,
-                codeSnippet: (window.CodeEditor ? window.CodeEditor.getValue() : "").substring(0, 100) + '...'
-            };
-            SIM_STATE.runHistory.push(runData);
-            
             if (window.UIManager) {
                 window.UIManager.setPlayButtonState(false);
-                window.UIManager.updateHistoryUI();
             }
+
+            const lvlName = window.LevelManager ? window.LevelManager.levels[SIM_STATE.currentLevel].name : `Fase ${SIM_STATE.currentLevel}`;
+            const code = window.CodeEditor ? window.CodeEditor.getValue() : document.getElementById('custom-code').value;
+
+            const payload = {
+                username: "pendente",
+                level_name: lvlName,
+                rise_time: SIM_STATE.riseTime,
+                overshoot: overshootPercent,
+                settling_time: SIM_STATE.timeOutsideTolerance,
+                final_error: error,
+                iae: SIM_STATE.iae,
+                ise: SIM_STATE.ise,
+                itae: SIM_STATE.itae,
+                code_snippet: code,
+                time_series: SIM_STATE.fullTelemetryData
+            };
+
+            if (window.UIManager && window.UIManager.showResultModal) {
+                window.UIManager.showResultModal(payload);
+            } else {
+                console.warn("UIManager.showResultModal não disponível. Simulação encerrada mas não salva.");
+            }
+
             return;
         }
 
