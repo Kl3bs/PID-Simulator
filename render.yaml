@@ -18,7 +18,6 @@ services:
   - type: web
     runtime: docker
     name: sketch-1-frontend
-    env: static
     plan: free
     dockerContext: ./frontend
     dockerfilePath: ./frontend/Dockerfile
