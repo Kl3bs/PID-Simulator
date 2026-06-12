@@ -20,7 +20,8 @@ services:
     name: sketch-1-frontend
     env: static
     plan: free
-    buildCommand: ""
+    dockerContext: ./frontend
+    dockerfilePath: ./frontend/Dockerfile
 
 databases:
   # 3. PostgreSQL Database
