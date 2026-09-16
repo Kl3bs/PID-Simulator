@@ -75,7 +75,20 @@ A interface segue a estética de uma **Estação de Instrumentação de Controle
    - Controles de visibilidade (toggles) integrados diretamente na UI.
    - Cálculo e exibição contínua do RMSE (Root Mean Square Error).
 
-2. **`TuningAssistant.js` (Novo Módulo de Sintonia)**:
+2. **`Scene3D.js` & Circuito com Aclives/Declives Dinâmicos (Three.js)**:
+   - **Circuito Modular Tridimensional**:
+     - Modelagem da pista via malha segmentada ou curva 3D (`CatmullRomCurve3` / `BufferGeometry`), contendo curvas suaves, zebras laterais e portal de setpoint iluminado.
+   - **Modos de Relevo Interativos**:
+     - Botões no console de controle: `[ Pista Plana ]`, `[ Aclive ↗ (+15°) ]`, `[ Declive ↘ (-15°) ]`, `[ Relevo Ondulado 〰 ]`.
+     - Deformação geométrica em tempo real dos vértices da pista (`position.needsUpdate = true`).
+   - **Física Gravitacional no Relevo**:
+     - Cálculo contínuo da inclinação instantânea $\alpha(x) = \arctan\left(\frac{dh}{dx}\right)$.
+     - Perturbação física realista: $F_{\text{relevo}} = - m \cdot g \cdot \sin(\alpha(x))$.
+     - O carro alinha seu *pitch* (inclinação longitudinal) com a tangente da pista e as rodas giram acompanhando a velocidade angular.
+   - **Efeitos Visuais e Iluminação (`threejs-lighting` & `threejs-materials`)**:
+     - Faróis com `SpotLight`, sombras suaves e câmera com amortecimento (*lerp*) para acompanhar o carro no circuito.
+
+3. **`TuningAssistant.js` (Novo Módulo de Sintonia)**:
    - Executa ensaio automatizado com entrada em degrau em malha aberta ($u(t) = 1.0$).
    - Coleta a curva de reação do processo até a estabilização.
    - Aplica o método da reta tangente no ponto de maior derivada para calcular:
