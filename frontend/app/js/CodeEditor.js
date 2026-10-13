@@ -36,6 +36,7 @@ window.CodeEditor = {
     setValue: function(value) {
         if (this.editor) {
             this.editor.setValue(value);
+            this.editor.refresh();
         }
     }
 };

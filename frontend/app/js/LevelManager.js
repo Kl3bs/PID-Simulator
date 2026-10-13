@@ -12,8 +12,7 @@ window.LevelManager = {
       name: "Carro na Pista",
       subtitle: "Controle de Posição Linear",
       difficulty: "INICIANTE",
-      difficultyColor: "#04A777",
-      headerGradient: "linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)",
+      difficultyColor: "#00E396",
       description: "Posicione o carro na linha de chegada usando controle PID.",
       tip: "Comece com <strong>Kp=0.5</strong>. Se o carro ultrapassar a meta, adicione <strong>Kd</strong> para frear.",
       defaultCode: `// Fase 1: Carro na Pista
@@ -46,86 +45,88 @@ return forca;`,
     },
     2: {
       id: 2,
-      name: "Drone no Vento",
-      subtitle: "Controle de Altitude com Rajadas",
+      name: "Bola na Barra (Ball & Beam)",
+      subtitle: "Equilíbrio Instável (Duplo Integrador)",
       difficulty: "AVANÇADO",
-      difficultyColor: "#FFB703",
-      headerGradient:
-        "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+      difficultyColor: "#FEB019",
       description:
-        "Estabilize a altitude do drone mesmo com rajadas de vento imprevisíveis!",
-      tip: "O vento aplica forças aleatórias. Use <strong>Kd alto</strong> para amortecer oscilações rápidas e um <strong>Ki moderado</strong> para compensar o desvio acumulado.",
-      defaultCode: `// Fase 2: Drone em Rajadas de Vento
-// 'disturbance' contém a força do vento atual
-let kp = 1.2;
-let ki = 0.4;
-let kd = 0.8;
+        "Estabilize a esfera de aço na posição desejada sobre a barra inclinada articulada!",
+      tip: "O sistema é <strong>instável em malha aberta</strong> (duplo integrador 1/s²). Sem o termo <strong>Kd (Derivativo)</strong>, a bola oscilará até cair da barra! Aumente o Kd para amortecer o movimento.",
+      defaultCode: `// Fase 2: Ball and Beam (Bola na Barra)
+// O sistema retorna o ângulo desejado da barra (graus, -20° a +20°)
+let kp = 0.8;
+let ki = 0.05;
+let kd = 2.4; // Ação derivativa é CRUCIAL para não oscilar!
 
-// O drone precisa compensar o vento!
-let thrust = (kp * error) + 
+// Calcula a inclinação da barra necessária
+let angulo = (kp * error) + 
              (ki * integral) + 
              (kd * derivative);
 
-return thrust;`,
-      targetLabel: "Altitude Alvo (m)",
-      targetMin: 20,
-      targetMax: 80,
+// Limita inclinação máxima da barra
+angulo = Math.max(-20, Math.min(20, angulo));
+
+return angulo;`,
+      targetLabel: "Posição na Barra (cm)",
+      targetMin: -40,
+      targetMax: 40,
       targetStep: 5,
-      targetDefault: 50,
+      targetDefault: 0,
       statLabels: {
-        pos: "Altitude",
-        vel: "Vel. Vertical",
-        err: "Desvio",
-        ctrl: "Empuxo",
+        pos: "Posição da Bola",
+        vel: "Vel. da Bola",
+        err: "Erro de Centro",
+        ctrl: "Ângulo Barra",
       },
-      statUnits: { pos: "m", vel: "m/s", err: "m", ctrl: "N" },
-      sceneModule: "SceneDrone",
+      statUnits: { pos: "cm", vel: "cm/s", err: "cm", ctrl: "°" },
+      sceneModule: "SceneBallAndBeam",
       challenge: {
-        text: "Desafio: Econômico (Acomodação < 5s)",
-        check: (metrics) => metrics.settling_time < 5,
+        text: "Desafio: Estável no Centro (|Erro| < 2 cm)",
+        check: (metrics) => Math.abs(metrics.error || 0) < 2,
       },
     },
     3: {
       id: 3,
-      name: "Navio no Porto",
-      subtitle: "Atracação com Correntes Oceânicas",
+      name: "Tanque de Nível Industrial",
+      subtitle: "Controle de Nível e Processos",
       difficulty: "ESPECIALISTA",
-      difficultyColor: "#FB5607",
-      headerGradient:
-        "linear-gradient(135deg, #0d3b59 0%, #1a6e8a 50%, #0d3b59 100%)",
+      difficultyColor: "#9C6ADE",
       description:
-        "Atraque o navio no cais com correntes oceânicas cíclicas perturbando sua trajetória!",
-      tip: "A corrente é <strong>senoidal e persistente</strong>. Um Ki elevado é essencial para eliminar o erro em regime. Mas cuidado com o windup do integrador!",
-      defaultCode: `// Fase 3: Navio Atracando no Porto
-// Correntes oceânicas criam perturbação senoidal constante
-let kp = 0.8;
-let ki = 0.6;
-let kd = 1.5;
+        "Controle a altura da coluna de água no tanque contra o escoamento de dreno e vazamentos de demanda!",
+      tip: "A bomba <strong>não admite valores negativos</strong> (ela só injeta água de 0 a 100%). Use <strong>Ki para eliminar o erro</strong> causado pela perda constante de água no dreno de Torricelli.",
+      defaultCode: `// Fase 3: Tanque de Nível de Líquido
+// Controle de bomba centrífuga (potência de 0 a 100%)
+let kp = 1.8;
+let ki = 0.25;
+let kd = 0.4;
 
-// Anti-windup simples:
-let integralClamped = Math.max(-200, Math.min(200, integral));
+// Anti-windup com clamping para bomba que satura em [0, 100%]
+let integralClamped = Math.max(-40, Math.min(60, integral));
 
-let rudder = (kp * error) + 
-             (ki * integralClamped) + 
-             (kd * derivative);
+let bomba = (kp * error) + 
+            (ki * integralClamped) + 
+            (kd * derivative);
 
-return rudder;`,
-      targetLabel: "Posição do Cais (m)",
-      targetMin: 150,
-      targetMax: 450,
-      targetStep: 30,
-      targetDefault: 300,
+// A bomba só injeta água (não aspira)
+bomba = Math.max(0, Math.min(100, bomba));
+
+return bomba;`,
+      targetLabel: "Nível Alvo (cm)",
+      targetMin: 10,
+      targetMax: 90,
+      targetStep: 5,
+      targetDefault: 60,
       statLabels: {
-        pos: "Posição Lateral",
-        vel: "Vel. Lateral",
-        err: "Desvio do Cais",
-        ctrl: "Leme (Força)",
+        pos: "Nível da Água",
+        vel: "Taxa de Nível",
+        err: "Desvio do Nível",
+        ctrl: "Potência Bomba",
       },
-      statUnits: { pos: "m", vel: "m/s", err: "m", ctrl: "N" },
-      sceneModule: "SceneShip",
+      statUnits: { pos: "cm", vel: "cm/s", err: "cm", ctrl: "%" },
+      sceneModule: "SceneWaterTank",
       challenge: {
-        text: "Desafio: Rápido (Acomodação < 8s)",
-        check: (metrics) => metrics.settling_time < 8,
+        text: "Desafio: Sem Transbordo (|Erro| < 1.5 cm)",
+        check: (metrics) => Math.abs(metrics.error || 0) < 1.5,
       },
     },
   },
@@ -164,7 +165,7 @@ return rudder;`,
     // Para simulação se estiver rodando
     if (window.SIM_STATE && window.SIM_STATE.isRunning) {
       window.SIM_STATE.isRunning = false;
-      if (window.PhysicsEngine) cancelAnimationFrame(PhysicsEngine.animationId);
+      if (window.PhysicsEngine) cancelAnimationFrame(window.PhysicsEngine.animationId);
     }
 
     this.currentLevel = levelId;
@@ -174,14 +175,21 @@ return rudder;`,
       b.classList.toggle("active", parseInt(b.dataset.levelId) === levelId);
     });
 
-    // Troca header visual
-    document.querySelector(".header").style.background = lvl.headerGradient;
+    // Troca header visual — remove qualquer estilo inline residual de background
+    const header = document.querySelector(".header");
+    if (header) {
+      header.style.removeProperty("background");
+      header.style.removeProperty("background-image");
+      header.style.background = "";
+      header.setAttribute("data-level", levelId);
+    }
 
     // Atualiza badge
     const badge = document.querySelector(".level-badge");
     if (badge) {
       badge.textContent = `FASE ${lvl.id}`;
-      badge.style.background = lvl.difficultyColor;
+      // Remove inline style para herdar o CSS do token --accent
+      badge.style.removeProperty("background");
     }
 
     // Atualiza título do header
@@ -239,6 +247,12 @@ return rudder;`,
     window.SIM_STATE.currentLevel = levelId;
     window.SIM_STATE.disturbance = 0;
 
+    // Visibilidade da barra de relevo 3D (apenas Fase 1)
+    const terrainToolbar = document.getElementById("terrain-toolbar");
+    if (terrainToolbar) {
+      terrainToolbar.style.display = levelId === 1 ? "flex" : "none";
+    }
+
     // Garante que o painel de perturbação seja atualizado (ocultado se for Fase 1)
     if (window.UIManager && window.UIManager.updateDisturbance) {
       window.UIManager.updateDisturbance(0);
@@ -250,13 +264,13 @@ return rudder;`,
       window.SIM_STATE.friction = 2;
       window.SIM_STATE.gravity = 0;
     } else if (levelId === 2) {
-      window.SIM_STATE.mass = 2.5; // Drone leve
-      window.SIM_STATE.friction = 0.5; // Arrasto do ar
-      window.SIM_STATE.gravity = 9.8 * window.SIM_STATE.mass; // Peso do drone
+      window.SIM_STATE.mass = 0.5; // Esfera de aço 0.5 kg
+      window.SIM_STATE.friction = 0.4; // Atrito de rolamento
+      window.SIM_STATE.gravity = 980; // Gravidade efetiva (cm/s²)
     } else if (levelId === 3) {
-      window.SIM_STATE.mass = 500; // Navio pesado
-      window.SIM_STATE.friction = 15; // Resistência da água
-      window.SIM_STATE.gravity = 0;
+      window.SIM_STATE.mass = 100; // Tanque 100 L
+      window.SIM_STATE.friction = 1.2; // Resistência hidráulica
+      window.SIM_STATE.gravity = 9.8;
     }
 
     // Atualiza UI de Modelagem Matemática
@@ -269,21 +283,23 @@ return rudder;`,
     const gravEl = document.getElementById("model-gravity");
     const tfDenEl = document.getElementById("model-tf-den");
 
-    if (massEl) massEl.textContent = m + (levelId === 3 ? " t" : " kg");
-    if (fricEl) fricEl.textContent = b + " N·s/m";
+    if (massEl) massEl.textContent = levelId === 1 ? m + " kg" : (levelId === 2 ? m + " kg (Esfera)" : "100 L (Tanque)");
+    if (fricEl) fricEl.textContent = levelId === 3 ? "Rh = " + b + " s/cm²" : b + " N·s/m";
     if (gravEl)
       gravEl.textContent =
-        g > 0 ? `9.8 m/s² (Compensação: ${g.toFixed(1)} N)` : "N/A";
-    if (tfDenEl) tfDenEl.textContent = `${m}s² + ${b}s`;
+        levelId === 1 ? "N/A (Rampa opcional)" : (levelId === 2 ? "9.8 m/s² (g·sin α)" : "Torricelli √(2gh)");
+    if (tfDenEl) tfDenEl.textContent = levelId === 1 ? `${m}s² + ${b}s` : (levelId === 2 ? "s² (Duplo Integrador)" : "12.0s + 1 (1ª Ordem)");
 
     // Reset geral
     if (window.PhysicsEngine && window.PhysicsEngine.reset) {
-      PhysicsEngine.reset();
+      window.PhysicsEngine.reset();
     }
-    if (window.ChartAnalytics) ChartAnalytics.reset();
+    if (window.ChartAnalytics && window.ChartAnalytics.reset) {
+      window.ChartAnalytics.reset();
+    }
     if (window.UIManager) {
-      UIManager.setPlayButtonState(false);
-      UIManager.updateTelemetry(0, 0, lvl.targetDefault, 0);
+      window.UIManager.setPlayButtonState(false);
+      window.UIManager.updateTelemetry(0, 0, lvl.targetDefault, 0);
     }
 
     // Troca a cena 3D
@@ -292,7 +308,7 @@ return rudder;`,
 
   switchScene: function (moduleName, setPoint) {
     // Destroi a cena anterior
-    ["Scene3D", "SceneDrone", "SceneShip"].forEach((mod) => {
+    ["Scene3D", "SceneBallAndBeam", "SceneWaterTank", "SceneDrone", "SceneShip"].forEach((mod) => {
       if (window[mod] && window[mod].destroy) {
         window[mod].destroy();
       }

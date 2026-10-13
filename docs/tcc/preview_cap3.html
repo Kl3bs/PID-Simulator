@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualização: Capítulo 3 - Metodologia e Desenvolvimento</title>
+    <!-- MathJax para formulas matematicas -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background-color: #f7f9fc;
+            color: #1e293b;
+            line-height: 1.8;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 60px 80px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+        }
+        .badge {
+            display: inline-block;
+            background: #e2e8f0;
+            color: #475569;
+            font-size: 0.75rem;
+            font-family: -apple-system, sans-serif;
+            padding: 4px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        h1.chapter {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 2.2rem;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-bottom: 30px;
+        }
+        h2.section {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 1.5rem;
+            color: #1e293b;
+            margin-top: 36px;
+            margin-bottom: 16px;
+        }
+        h3.subsection {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 1.2rem;
+            color: #334155;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+        p {
+            text-align: justify;
+            text-indent: 2.5em;
+            margin-bottom: 1.2em;
+            font-size: 1.1rem;
+        }
+        blockquote {
+            margin: 24px 0 24px 40px;
+            padding: 12px 20px;
+            border-left: 4px solid #3b82f6;
+            background: #f8fafc;
+            font-style: italic;
+            color: #334155;
+            font-size: 1.05rem;
+        }
+        ul, ol {
+            margin: 20px 0 20px 30px;
+            padding-left: 20px;
+            font-size: 1.05rem;
+        }
+        li {
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        .citation {
+            color: #2563eb;
+            font-weight: 500;
+        }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">Visualizador Python .tex &bull; TCC Engenharia UFAL</span>
+        <h1 class="chapter">Metodologia e Desenvolvimento do Sistema</h1>
+<p>Este capítulo detalha a metodologia de engenharia adotada na concepção, modelagem física e implementação do <em>PID Simulator</em>. Apresentam-se os requisitos de projeto, a modelagem matemática das três plantas dinâmicas (veículo terrestre com relevo, drone sob rajadas de vento e embarcação sujeita a correntes marítimas), a formulação da integração numérica em tempo real, as decisões arquiteturais do frontend em WebGL/Three.js com <em>sandbox</em> segura de execução, a infraestrutura de serviços backend em FastAPI para emissão de relatórios e a conteinerização em Docker.</p>
+<h2 class="section">Requisitos e Visão Geral da Arquitetura</h2>
+<p>O projeto do sistema foi concebido para atender às demandas de um ambiente laboratorial virtual de ensino em Engenharia de Computação, aliando facilidade de uso a rigor numérico.</p>
+<h3 class="subsection">Levantamento de Requisitos</h3>
+<p>Os requisitos do sistema foram estruturados em categorias funcionais e não-funcionais:</p>
+<ul>
+    <li><strong>Requisitos Funcionais (RF):</strong>
+    <ul>
+        <li><strong>RF01 (Simulação em Malha Fechada):</strong> Executar algoritmos de controle PID definidos programaticamente pelo usuário em tempo real sobre modelos físicos simulados;
+        <li><strong>RF02 (Editor de Código Integrado):</strong> Prover ambiente de desenvolvimento em JavaScript com destaque sintático, auto-indentação e persistência local;
+        <li><strong>RF03 (Isolamento em Sandbox):</strong> Executar o código do usuário em escopo protegido, interceptando exceções de execução sem interromper a interface gráfica;
+        <li><strong>RF04 (Bancada Tridimensional Interativa):</strong> Renderizar a resposta cinemática e dinâmica da planta em cena 3D acelerada por hardware com câmera dinâmica;
+        <li><strong>RF05 (Osciloscópio Didático Multicanal):</strong> Exibir a evolução temporal síncrona da variável de processo $y(t)$, referência $r(t)$, erro $e(t)$ e decomposição individual das forças $u_P(t), u_I(t), u_D(t)$;
+        <li><strong>RF06 (Assistente de Sintonia Automático):</strong> Executar ensaio de degrau em malha aberta, calcular parâmetros FOPDT ($K, \tau, \theta$) e fornecer ganhos de Ziegler-Nichols e Cohen-Coon com aplicação direta no editor;
+        <li><strong>RF07 (Emissão de Relatórios Técnicos e Exportação):</strong> Sintetizar relatórios em formato PDF com diagnóstico de controle e disponibilizar exportação de dados brutos em formato CSV para análise científica.
+    </ul>
+    
+    <li><strong>Requisitos Não-Funcionais (RNF):</strong>
+    <ul>
+        <li><strong>RNF01 (Desempenho Temporal):</strong> Manter taxa de atualização visual estável de no mínimo 30 quadros por segundo ($\text{FPS} \ge 30$) sob carga gráfica contínua;
+        <li><strong>RNF02 (Portabilidade e Acessibilidade):</strong> Operar nativamente em navegadores modernos sem a necessidade de <em>plugins</em> ou instalações locais proprietárias;
+        <li><strong>RNF03 (Determinismo Numérico):</strong> Limitar o passo de integração temporal ($\Delta t \le 0{,}1\text{ s}$) para evitar divergência numérica em situações de oscilação severa;
+        <li><strong>RNF04 (Modularidade e Implantação):</strong> Disponibilizar a aplicação encapsulada em contêineres Docker padronizados via `docker-compose`.
+    </ul>
+</ul>
+<h3 class="subsection">Arquitetura do Sistema</h3>
+<p>A solução segue uma arquitetura cliente-servidor distribuída e desacoplada, esquematizada na Figura <span class="ref">[fig:arquitetura_geral]</span>. O processamento de simulação numérica de alta frequência e a renderização gráfica ocorrem integralmente no cliente (<em>browser-side</em>), aliviando o tráfego de rede e garantindo latência nula de feedback tátil. O servidor backend atua como repositório de persistência assíncrona, orquestrador de diagnósticos heurísticos e motor de compilação de relatórios técnicos em PDF.</p>
+<p>\begin{figure}[htbp]
+    \centering
+    \caption{Arquitetura modular em camadas do PID Simulator integrando cliente WebGL e serviços backend.}
+    
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \vspace{0.4cm}
+        <strong>[CAMADA CLIENTE &mdash; NAVEGADOR WEB]</strong> \\
+        \vspace{0.2cm}
+        $\boxed{\text{CodeMirror (Editor)}} \longleftrightarrow \boxed{\text{Sandbox JS (new Function)}} \longrightarrow \boxed{\text{PhysicsEngine (Euler explícito)}}$ \\
+        \vspace{0.2cm}
+        $\boxed{\text{PhysicsEngine}} \xrightarrow{\text{Estado Físico}} \boxed{\text{Scene3D (Three.js/WebGL)}} \quad \text{e} \quad \boxed{\text{ChartAnalytics (Chart.js)}}$ \\
+        \vspace{0.4cm}
+        $\Updownarrow \text{HTTP REST / JSON (fetch assíncrono)}$ \\
+        \vspace{0.4cm}
+        <strong>[CAMADA SERVIDOR &mdash; FASTAPI / PYTHON]</strong> \\
+        \vspace{0.2cm}
+        $\boxed{\text{Endpoints REST (/runs)}} \longrightarrow \boxed{\text{ScoreService (Diagnóstico)}} \longrightarrow \boxed{\text{ReportGenerator (PDF/CSV)}}$ \\
+        \vspace{0.2cm}
+        $\boxed{\text{Endpoints REST}} \longleftrightarrow \boxed{\text{SQLAlchemy ORM}} \longleftrightarrow \boxed{\text{PostgreSQL Database}}$
+        \vspace{0.4cm}
+    }}
+    \vspace{0.1cm}
+    \fonte{Elaborada pelo autor (2026).}
+\end{figure}</p>
+<h2 class="section">Modelagem Física e Simulação Numérica</h2>
+<p>Para expor o discente a desafios de controle de complexidade crescente, o sistema implementa três modelos físicos com características dinâmicas distintas.</p>
+<h3 class="subsection">Planta 1: Dinâmica Longitudinal de Veículo com Relevo 3D</h3>
+<p>A primeira planta modela a movimentação linear de um veículo terrestre de massa $m$ sujeito à força propulsiva do motor $u(t)$, atrito viscoso $b \cdot v(t)$ e perturbações gravitacionais induzidas pelo perfil topográfico da pista de testes. A equação diferencial de movimento de segundo grau em relação à posição $x(t)$ é dada por:</p>
+<p>\begin{equation}
+    m \, \frac{d^2 x(t)}{dt^2} + b \, \frac{dx(t)}{dt} = u(t) + F_{\text{relevo}}(x)
+    
+\end{equation}</p>
+<p>A força gravitacional decorrente do relevo tridimensional é calculada dinamicamente a partir da inclinação instantânea $\alpha(x)$ da malha da pista:</p>
+<p>\begin{equation}
+    F_{\text{relevo}}(x) = - m \, g \, \sin(\alpha(x))
+    
+\end{equation}</p>
+<p>\noindent onde $\alpha(x) = \arctan\left(\frac{dh}{dx}\right)$ representa a inclinação tangencial derivada da função de elevação $h(x)$ do terreno no ponto ocupado pelo veículo. Esta formulação introduz uma perturbação não-linear de carga dependente da posição espacial, demandando ação integral ($u_I$) vigorosa para anular o erro de regime ao subir rampas.</p>
+<h3 class="subsection">Planta 2: Dinâmica Vertical de Drone sob Rajadas de Vento</h3>
+<p>A segunda planta modela a sustentação vertical (altitude $y$) de um quadrirrotor. A equação do movimento expressa-se por:</p>
+<p>\begin{equation}
+    m \, \frac{d^2 y(t)}{dt^2} + b_y \, \frac{dy(t)}{dt} = u(t) - m \, g + F_{\text{vento}}(t)
+    
+\end{equation}</p>
+<p>\noindent na qual $u(t)$ é o empuxo resultante dos rotores, $m g$ é a força-peso constante e $F_{\text{vento}}(t)$ é um processo estocástico composto por componente senoidal de baixa frequência somado a rajadas abruptas de vento lateral:</p>
+<p>\begin{equation}
+    F_{\text{vento}}(t) = A_v \sin(\omega_v t) + F_{\text{rajada}}(t) + \eta(t)
+    
+\end{equation}</p>
+<p>\noindent onde $\eta(t)$ denota ruído turbulento gaussiano centrado em zero. O modelo restringe fisicamente a altitude ao solo ($y(t) \ge 0$), gerando impacto inelástico na colisão.</p>
+<h3 class="subsection">Planta 3: Dinâmica de Embarcação Marítima sob Correntes Oceânicas</h3>
+<p>A terceira planta representa um navio de grande porte com inércia hidrodinâmica elevada e forte amortecimento quadrático de arrasto. A perturbação ambiental $F_{\text{oceano}}(t)$ é regida pela superposição de ondas oceânicas com múltiplas frequências fundamentais:</p>
+<p>\begin{equation}
+    F_{\text{oceano}}(t) = A_1 \sin(\omega_1 t) + A_2 \sin(\omega_2 t + \phi_2) + A_3(t) \sin(\omega_3 t + \phi_3)
+    
+\end{equation}</p>
+<p>Este cenário desafia o aluno a ajustar o ganho derivativo $K_d$ para evitar sobreoscilações causadas pela inércia maciça do casco e a lidar com atrasos de transporte significativos.</p>
+<h3 class="subsection">Discretização Numérica e Laço de Simulação</h3>
+<p>A integração das equações diferenciais contínuas é realizada no motor de física (`PhysicsEngine.js`) através do método de Euler explícito acoplado ao ciclo de renderização do navegador via `requestAnimationFrame`. Em cada quadro $k$, calcula-se o intervalo temporal real decorrido $\Delta t = (t_k - t_{k-1})$:</p>
+<p>\begin{align}
+    a[k] &= \frac{u[k] + d[k] - b \, v[k-1]}{m}  \\
+    v[k] &= v[k-1] + a[k] \, \Delta t  \\
+    x[k] &= x[k-1] + v[k] \, \Delta t 
+\end{align}</p>
+<p>Para garantir estabilidade numérica mesmo sob eventuais atrasos de agendamento na <em>thread</em> principal do navegador, o passo $\Delta t$ é rigidamente saturado em $\Delta t_{\max} = 0{,}1\text{ s}$.</p>
+<h2 class="section">Implementação da Plataforma Frontend</h2>
+<p>A interface de usuário foi concebida sob os princípios de ergonomia de estações de instrumentação, organizada em módulos complementares.</p>
+<h3 class="subsection">Editor de Código e Sandbox de Execução Segura</h3>
+<p>A programação do controlador é viabilizada através da integração do editor CodeMirror com suporte a realce sintático para JavaScript. O algoritmo definido pelo usuário é compilado em tempo de execução através do construtor `new Function`:</p>
+<p>\begin{verbatim}
+const userFunc = new Function(
+    'error', 'integral', 'derivative', 'velocity', 'position', 'disturbance',
+    customCode
+);
+const output = userFunc(error, integral, derivative, velocity, position, dist);
+\end{verbatim}</p>
+<p>Essa abordagem isola as variáveis locais do motor de física, impedindo a poluição do escopo global `window`. A chamada é interceptada por tratamento estrito de exceções; caso ocorra divisão por zero, retorno não-numérico (`NaN`) ou laço infinito acidental, a simulação é pausada preventivamente e uma mensagem descritiva é apresentada no console de diagnóstico da interface.</p>
+<h3 class="subsection">Cena Tridimensional com Three.js</h3>
+<p>O ambiente tridimensional é estruturado sobre o WebGL utilizando a biblioteca Three.js. A pista de testes da Fase 1 é construída proceduralmente através de malhas segmentadas (`BufferGeometry`), permitindo a aplicação de deformações dinâmicas nos vértices de altura para gerar modos de relevo (plano, aclive de $+15^\circ$, declive de $-15^\circ$ e pista ondulada senoidal).</p>
+<p>A câmera virtual acompanha a translação do veículo utilizando amortecimento exponencial (<em>lerp</em>):</p>
+<p>\begin{equation}
+    \mathbf{P}_{\text{cam}}[k] = \mathbf{P}_{\text{cam}}[k-1] + \lambda \, (\mathbf{P}_{\text{alvo}}[k] - \mathbf{P}_{\text{cam}}[k-1])
+    
+\end{equation}</p>
+<p>\noindent onde $\lambda \in (0, 1)$ define o fator de suavização, garantindo uma transição visual contínua sem trepidação durante variações bruscas de velocidade.</p>
+<h3 class="subsection">Osciloscópio Digital e Decomposição de Sinais</h3>
+<p>O módulo de telemetria didática emprega a biblioteca Chart.js otimizada para atualização contínua em tempo real. O gráfico projeta simultaneamente seis curvas temporais correlacionadas:</p>
+<ol>
+    <li>Variável de processo $y(t)$ (traço ciano);
+    <li>Sinal de referência $r(t)$ (linha tracejada vermelha);
+    <li>Parcela Proporcional $u_P(t) = K_p e(t)$ (traço âmbar pontilhado);
+    <li>Parcela Integral $u_I(t) = K_i \int e \, dt$ (traço esmeralda tracejado);
+    <li>Parcela Derivativa $u_D(t) = K_d \frac{de}{dt}$ (traço roxo traço-ponto);
+    <li>Resposta analítica teórica de referência $y_{\text{teorico}}(t)$ (linha cinza).
+</ol>
+<p>Chaves seletoras (<em>toggles</em>) na interface permitem ligar e desligar individualmente cada componente do esforço de controle, viabilizando ensaios analíticos onde o estudante observa o isolamento do efeito de amortecimento do termo $u_D$ ou a ação cumulativa do termo $u_I$.</p>
+<h3 class="subsection">Módulo Automatizado de Sintonia Assistida</h3>
+<p>O componente `TuningAssistant.js` automatiza o procedimento experimental de sintonia em malha aberta:</p>
+<ol>
+    <li>O usuário clica em ``Iniciar Ensaio de Malha Aberta'', disparando a aplicação de um degrau unitário constante $u(t) = 1{,}0$;
+    <li>O sistema monitora a resposta até a estabilização assintótica da velocidade ou posição;
+    <li>Algoritmicamente, o módulo localiza o ponto de maior derivada temporal $\left(\frac{dy}{dt}\right)_{\max}$, traça a reta tangente e determina a interseção com o eixo temporal, extraindo os parâmetros FOPDT: ganho estático $K$, tempo morto $\theta$ e constante de tempo $\tau$;
+    <li>As tabelas de Ziegler-Nichols e Cohen-Coon são computadas e apresentadas em uma janela modal com botão ``Aplicar Ganhos no Editor'', que injeta os valores calculados diretamente no código-fonte do estudante.
+</ol>
+<h2 class="section">Infraestrutura Backend e Geração Científica</h2>
+<p>A camada backend foi estruturada em Python utilizando o framework assíncrono FastAPI. A persistência de dados utiliza o SQLAlchemy ORM conectado a um banco relacional PostgreSQL, mapeando modelos para registros de ensaios laboratoriais (`RunModel`) e amostras temporais de telemetria.</p>
+<h3 class="subsection">Diagnóstico Heurístico e Geração de Relatórios (PDF)</h3>
+<p>Ao término de cada ensaio, a série temporal de telemetria é submetida ao endpoint `POST /api/v1/runs/`. O módulo de inteligência diagnóstica (`score_service.py`) analisa os dados consolidados e classifica a qualidade da resposta do controlador segundo regras heurísticas:</p>
+<ul>
+    <li>Se $M_p > 25%$, o diagnóstico sinaliza ganho proporcional $K_p$ excessivo ou falta de ação derivativa $K_d$;
+    <li>Se $e_{ss} > 2%$, recomenda-se a elevação do ganho integral $K_i$;
+    <li>Se o tempo de subida for excessivamente lento ($t_r > 3\tau$), indica-se sub-dimensionamento de $K_p$.
+</ul>
+<p>O gerador de documentos (`report_generator.py`), construído com as bibliotecas ReportLab e Matplotlib, sintetiza um laudo técnico completo em formato PDF contendo:
+<ol>
+    <li>Cabeçalho institucional com carimbo de data, hora e fase experimental;
+    <li>Tabela de métricas consolidadas ($t_r, t_s, M_p, e_{ss}, \text{RMSE}, \text{IAE}, \text{ITAE}$);
+    <li>Painel superior com curvas comparativas de saída $y(t)$, referência $r(t)$ e erro $e(t)$;
+    <li>Painel inferior com a decomposição vetorial de esforços $u_P(t), u_I(t), u_D(t)$ e limites de saturação;
+    <li>Parecer técnico detalhado com recomendações de ajuste paramétrico.
+</ol></p>
+<p>Adicionalmente, o endpoint `GET /api/v1/runs/{id}/export-csv` gera conjuntos de dados estruturados com as séries temporais brutas, permitindo que os discentes importem os resultados em ferramentas científicas (como Python SciPy, MATLAB ou OriginLab) para confecção de artigos e relatórios de laboratório.</p>
+<h2 class="section">Conteinerização e Implantação com Docker</h2>
+<p>Para assegurar reprodutibilidade experimental estrita e eliminar conflitos de dependências em estações de trabalho de laboratório, toda a aplicação foi empacotada em contêineres Docker orquestrados por `docker-compose`.</p>
+<p>O serviço frontend opera sob servidor web Nginx ou servidor estático leve, expondo a porta `8080`, enquanto a API backend FastAPI executa via Uvicorn na porta `8081` com migrações automáticas de banco de dados. Um único comando (`docker compose up &ndash;build`) é suficiente para instanciar integralmente o laboratório virtual em qualquer sistema operacional (Linux, macOS, Windows).</p>
+    </div>
+</body>
+</html>

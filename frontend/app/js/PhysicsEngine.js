@@ -1,9 +1,8 @@
 /* 
     MÓDULO DE FÍSICA E CONTROLE
     Responsável por calcular movimento, simular a física e aplicar a lógica do PID.
-    Suporta múltiplas fases com perturbações externas distintas.
+    Suporta múltiplas fases com perturbações externas distintas e relevo dinâmico.
 */
-
 
 window.SIM_STATE = {
     isRunning: false,
@@ -21,7 +20,8 @@ window.SIM_STATE = {
     mass: 50,
     friction: 2,
     gravity: 0,         // Gravidade (usada na fase do drone)
-    disturbance: 0,     // Força de perturbação externa atual (vento, corrente)
+    disturbance: 0,     // Força de perturbação externa atual (vento, corrente, relevo)
+    terrainMode: 'flat', // Modo de relevo da Fase 1 ('flat', 'incline', 'decline', 'wave')
     
     currentLevel: 1,    // Fase ativa
 
@@ -71,74 +71,63 @@ window.PhysicsEngine = {
         SIM_STATE.timeOutsideTolerance = 0;
         SIM_STATE.settleStabilityTimer = 0;
 
-        // Reset perturbações
+        // Reset perturbações e estados específicos das fases
         SIM_STATE._gustTimer = 0;
         SIM_STATE._gustDuration = 0;
         SIM_STATE._gustForce = 0;
         SIM_STATE._gustActive = false;
-        SIM_STATE._baseWind = 2 + Math.random() * 3;
-        SIM_STATE._oceanPhase = 0;
+        SIM_STATE.beamAngle = 0;
+        SIM_STATE.pumpPower = 0;
         SIM_STATE.fullTelemetryData = [];
     },
 
     /**
-     * FASE 2: Calcula perturbação de vento para o drone
-     * Combina: vento base suave + rajadas repentinas + turbulência de alta frequência
+     * FASE 1: Calcula perturbação gravitacional de aclives/declives na pista
      */
-    _calcWindDisturbance: function(dt) {
+    _calcInclineDisturbance: function() {
+        if (window.Scene3D && typeof Scene3D.getElevationAndSlope === 'function') {
+            const { angle } = Scene3D.getElevationAndSlope(SIM_STATE.position);
+            // Força no plano inclinado: F = - m * g_eff * sin(alpha)
+            const gEff = 350;
+            SIM_STATE.disturbance = -SIM_STATE.mass * gEff * Math.sin(angle);
+            return SIM_STATE.disturbance;
+        }
+        SIM_STATE.disturbance = 0;
+        return 0;
+    },
+
+    /**
+     * FASE 2: Calcula perturbação externa na barra (impulso / desbalanceamento)
+     */
+    _calcBeamDisturbance: function(dt) {
         SIM_STATE._gustTimer += dt;
-
-        // Vento base senoidal com variação lenta
-        const baseWind = SIM_STATE._baseWind * Math.sin(SIM_STATE.simTime * 0.3) * SIM_STATE.mass;
-
-        // Rajada aleatória periódica
-        const gustInterval = 3 + Math.random() * 2; // Entre 3-5s
-        if (!SIM_STATE._gustActive && SIM_STATE._gustTimer > gustInterval) {
-            SIM_STATE._gustActive = true;
+        // A cada 4 segundos, simula um leve toque ou desbalanceamento na barra
+        if (SIM_STATE._gustTimer > 4.5) {
             SIM_STATE._gustTimer = 0;
-            SIM_STATE._gustDuration = 0.4 + Math.random() * 0.8;           // Dura 0.4–1.2s
-            SIM_STATE._gustForce = (Math.random() > 0.5 ? 1 : -1)         // Direção aleatória
-                                  * (8 + Math.random() * 18)               // Intensidade 8–26 N
-                                  * SIM_STATE.mass;
+            SIM_STATE._gustActive = true;
+            SIM_STATE._gustDuration = 0.35;
+            SIM_STATE._gustForce = (Math.random() > 0.5 ? 1 : -1) * (20 + Math.random() * 25);
         }
 
-        let gustContrib = 0;
+        let dist = 0;
         if (SIM_STATE._gustActive) {
             SIM_STATE._gustDuration -= dt;
-            // Envelope trapezoidal: sobe rápido, sustenta, cai rápido
-            gustContrib = SIM_STATE._gustForce * Math.min(1, SIM_STATE._gustDuration * 3);
+            dist = SIM_STATE._gustForce;
             if (SIM_STATE._gustDuration <= 0) SIM_STATE._gustActive = false;
         }
 
-        // Turbulência de alta frequência (ruído)
-        const turbulence = (Math.random() - 0.5) * 4 * SIM_STATE.mass;
-
-        SIM_STATE.disturbance = baseWind + gustContrib + turbulence;
+        SIM_STATE.disturbance = dist;
         return SIM_STATE.disturbance;
     },
 
     /**
-     * FASE 3: Calcula perturbação de corrente oceânica para o navio
-     * Corrente senoidal de período longo + harmônico secundário + maré
+     * FASE 3: Calcula perturbação de vazamento / consumo de vazão no tanque de água
      */
-    _calcOceanDisturbance: function(dt) {
-        SIM_STATE._oceanPhase += dt;
-        const t = SIM_STATE._oceanPhase;
-
-        // Corrente principal (período ~12s) — a grande maré
-        const mainCurrent = Math.sin(t * 0.52) * 22 * SIM_STATE.mass;
-
-        // Harmônico secundário (período ~5s) — ondas de meio-período
-        const secondary = Math.sin(t * 1.26 + 1.1) * 8 * SIM_STATE.mass;
-
-        // Componente de rajada de corrente (aumenta progressivamente)
-        const surgeAmplitude = Math.min(15, SIM_STATE.simTime * 0.8); // Cresce com o tempo
-        const surgeCurrent = Math.sin(t * 0.18 + 2.3) * surgeAmplitude * SIM_STATE.mass;
-
-        // Ruído de turbulência aquática
-        const turbulence = (Math.random() - 0.5) * 3 * SIM_STATE.mass;
-
-        SIM_STATE.disturbance = mainCurrent + secondary + surgeCurrent + turbulence;
+    _calcTankLeakDisturbance: function(dt) {
+        // Simula uma abertura periódica ou constante de válvula de demanda
+        const baseLeak = 1.2;
+        const waveDemand = 0.5 * Math.sin(SIM_STATE.simTime * 0.4);
+        SIM_STATE.disturbance = baseLeak + waveDemand;
         return SIM_STATE.disturbance;
     },
 
@@ -163,35 +152,52 @@ window.PhysicsEngine = {
 
         // === CALCULA PERTURBAÇÃO EXTERNA POR FASE ===
         let externalDisturbance = 0;
-        if (SIM_STATE.currentLevel === 2) {
-            externalDisturbance = PhysicsEngine._calcWindDisturbance(dt);
+        if (SIM_STATE.currentLevel === 1) {
+            externalDisturbance = PhysicsEngine._calcInclineDisturbance();
+        } else if (SIM_STATE.currentLevel === 2) {
+            externalDisturbance = PhysicsEngine._calcBeamDisturbance(dt);
         } else if (SIM_STATE.currentLevel === 3) {
-            externalDisturbance = PhysicsEngine._calcOceanDisturbance(dt);
+            externalDisturbance = PhysicsEngine._calcTankLeakDisturbance(dt);
         }
 
         let error = SIM_STATE.setPoint - SIM_STATE.position;
         let force = 0;
+        let pTerm = 0;
+        let iTerm = 0;
+        let dTerm = 0;
 
         SIM_STATE.integral += error * dt;
         let derivative = (error - SIM_STATE.lastError) / dt;
         SIM_STATE.lastError = error;
 
-        // Calcula métricas de erro integral
+        // Métricas de erro integral
         SIM_STATE.iae += Math.abs(error) * dt;
         SIM_STATE.ise += (error * error) * dt;
         SIM_STATE.itae += SIM_STATE.simTime * Math.abs(error) * dt;
 
-        // === EXECUTA CÓDIGO DO USUÁRIO ===
+        // === EXECUTA CÓDIGO DO USUÁRIO COM DECOMPOSIÇÃO DE FORÇAS ===
         if (SIM_STATE.useCodeMode) {
             try {
-                const customCode = window.CodeEditor ? window.CodeEditor.getValue() : document.getElementById('custom-code').value;
+                const customCode = window.CodeEditor ? window.CodeEditor.getValue() : (document.getElementById('custom-code') ? document.getElementById('custom-code').value : '');
                 const userFunc = new Function('error', 'integral', 'derivative', 'velocity', 'position', 'disturbance', customCode);
-                force = userFunc(error, SIM_STATE.integral, derivative, SIM_STATE.velocity, SIM_STATE.position, externalDisturbance);
+                const rawOutput = userFunc(error, SIM_STATE.integral, derivative, SIM_STATE.velocity, SIM_STATE.position, externalDisturbance);
                 
+                if (typeof rawOutput === 'object' && rawOutput !== null) {
+                    force = Number(rawOutput.force ?? rawOutput.u ?? 0);
+                    pTerm = Number(rawOutput.up ?? (SIM_STATE.kp * error));
+                    iTerm = Number(rawOutput.ui ?? (SIM_STATE.ki * SIM_STATE.integral));
+                    dTerm = Number(rawOutput.ud ?? (SIM_STATE.kd * derivative));
+                } else {
+                    force = Number(rawOutput);
+                    pTerm = SIM_STATE.kp ? (SIM_STATE.kp * error) : force;
+                    iTerm = SIM_STATE.ki ? (SIM_STATE.ki * SIM_STATE.integral) : 0;
+                    dTerm = SIM_STATE.kd ? (SIM_STATE.kd * derivative) : 0;
+                }
+
                 if (isNaN(force) || force === undefined) {
                     throw new Error("A função deve possuir 'return' com valor numérico.");
                 }
-                if (window.UIManager) window.UIManager.hideError();
+                if (window.UIManager && window.UIManager.hideError) window.UIManager.hideError();
             } catch (e) {
                 force = 0;
                 if (window.UIManager) {
@@ -199,32 +205,73 @@ window.PhysicsEngine = {
                     window.UIManager.setPlayButtonState(false);
                 }
                 SIM_STATE.isRunning = false;
-                cancelAnimationFrame(PhysicsEngine.animationId);
+                if (window.PhysicsEngine) cancelAnimationFrame(window.PhysicsEngine.animationId);
                 return;
             }
         } else {
-            force = (SIM_STATE.kp * error) + (SIM_STATE.ki * SIM_STATE.integral) + (SIM_STATE.kd * derivative);
+            pTerm = SIM_STATE.kp * error;
+            iTerm = SIM_STATE.ki * SIM_STATE.integral;
+            dTerm = SIM_STATE.kd * derivative;
+            force = pTerm + iTerm + dTerm;
         }
 
         force = Math.max(-100000, Math.min(100000, force));
 
+        let acceleration = 0;
+
         // === DINÂMICA POR FASE ===
-        let netForce = force + externalDisturbance;
+        if (SIM_STATE.currentLevel === 1) {
+            // FASE 1: Carro na pista com relevo e atrito viscoso
+            let netForce = force + externalDisturbance;
+            acceleration = (netForce - (SIM_STATE.friction * SIM_STATE.velocity)) / SIM_STATE.mass;
+            SIM_STATE.velocity += acceleration * dt;
+            SIM_STATE.position += SIM_STATE.velocity * dt;
+        } else if (SIM_STATE.currentLevel === 2) {
+            // FASE 2: Ball and Beam (Bola na Barra)
+            // O sinal de controle define a inclinação angular da barra (em graus, limitado a +-25°)
+            const alphaDeg = Math.max(-25, Math.min(25, force));
+            const alphaRad = (alphaDeg * Math.PI) / 180;
+            SIM_STATE.beamAngle = alphaRad;
 
-        // Fase 2 (Drone): inclui gravidade e eixo Y
-        if (SIM_STATE.currentLevel === 2) {
-            netForce -= SIM_STATE.gravity; // O empuxo precisa superar o peso
+            // Aceleração da esfera: (5/7) * g * sin(alpha) - atrito + perturbação
+            const gEff = 980; // cm/s²
+            acceleration = (5 / 7) * gEff * Math.sin(alphaRad) - (SIM_STATE.friction * SIM_STATE.velocity) + externalDisturbance;
+            SIM_STATE.velocity += acceleration * dt;
+            SIM_STATE.position += SIM_STATE.velocity * dt;
+
+            // Batentes físicos inelásticos nas extremidades (-46 cm e +46 cm)
+            if (SIM_STATE.position > 46) {
+                SIM_STATE.position = 46;
+                SIM_STATE.velocity = -SIM_STATE.velocity * 0.15;
+            } else if (SIM_STATE.position < -46) {
+                SIM_STATE.position = -46;
+                SIM_STATE.velocity = -SIM_STATE.velocity * 0.15;
+            }
+        } else if (SIM_STATE.currentLevel === 3) {
+            // FASE 3: Tanque de Nível Industrial
+            // O sinal de controle define a potência da bomba centrífuga (0 a 100%, sem valores negativos)
+            const pumpPower = Math.max(0, Math.min(100, force));
+            SIM_STATE.pumpPower = pumpPower;
+
+            // Vazão de entrada proporcional e escoamento gravitacional de Torricelli
+            const qIn = (pumpPower / 100) * 8.2; // Vazão máx de enchimento ~8.2 cm/s
+            const qOut = 0.42 * Math.sqrt(Math.max(0, SIM_STATE.position)); // Torricelli
+            const dh_dt = qIn - qOut - externalDisturbance;
+
+            acceleration = (dh_dt - SIM_STATE.velocity) / Math.max(0.001, dt);
+            SIM_STATE.velocity = dh_dt;
+            SIM_STATE.position += SIM_STATE.velocity * dt;
+
+            // Limites de coluna de água (0 a 100 cm)
+            if (SIM_STATE.position < 0) {
+                SIM_STATE.position = 0;
+                SIM_STATE.velocity = 0;
+            } else if (SIM_STATE.position > 100) {
+                SIM_STATE.position = 100;
+                SIM_STATE.velocity = 0;
+            }
         }
 
-        let acceleration = (netForce - (SIM_STATE.friction * SIM_STATE.velocity)) / SIM_STATE.mass;
-        SIM_STATE.velocity += acceleration * dt;
-
-        // Fase 2: limita altitude ao chão (posição mínima = 0)
-        SIM_STATE.position += SIM_STATE.velocity * dt;
-        if (SIM_STATE.currentLevel === 2 && SIM_STATE.position < 0) {
-            SIM_STATE.position = 0;
-            SIM_STATE.velocity = 0;
-        }
         SIM_STATE.simTime += dt;
 
         // === MÉTRICAS ===
@@ -240,7 +287,7 @@ window.PhysicsEngine = {
             SIM_STATE.riseTime = SIM_STATE.simTime;
         }
 
-        let tol = Math.max(SIM_STATE.setPoint * 0.04, 1); // 4% de tolerância (mais difícil)
+        let tol = Math.max(SIM_STATE.setPoint * 0.04, 1);
         if (Math.abs(error) > tol || Math.abs(SIM_STATE.velocity) > 0.5) {
             SIM_STATE.timeOutsideTolerance = SIM_STATE.simTime;
             SIM_STATE.settleStabilityTimer = 0;
@@ -268,12 +315,24 @@ window.PhysicsEngine = {
                 SIM_STATE.ise,
                 SIM_STATE.itae
             );
-            // Mostra perturbação na UI se disponível
             if (window.UIManager.updateDisturbance) {
                 window.UIManager.updateDisturbance(externalDisturbance);
             }
         }
-        if (window.ChartAnalytics) window.ChartAnalytics.tick(timestamp, SIM_STATE.position, SIM_STATE.setPoint, error, force, externalDisturbance);
+        
+        if (window.ChartAnalytics) {
+            window.ChartAnalytics.tick(
+                timestamp, 
+                SIM_STATE.position, 
+                SIM_STATE.setPoint, 
+                error, 
+                force, 
+                externalDisturbance,
+                pTerm,
+                iTerm,
+                dTerm
+            );
+        }
 
         // Salva telemetria completa da simulação
         if (!SIM_STATE.fullTelemetryData) SIM_STATE.fullTelemetryData = [];
@@ -283,10 +342,13 @@ window.PhysicsEngine = {
             setpoint: parseFloat(SIM_STATE.setPoint.toFixed(3)),
             error: parseFloat(error.toFixed(3)),
             force: parseFloat(force.toFixed(3)),
+            u_p: parseFloat(pTerm.toFixed(3)),
+            u_i: parseFloat(iTerm.toFixed(3)),
+            u_d: parseFloat(dTerm.toFixed(3)),
             disturbance: parseFloat(externalDisturbance.toFixed(3))
         });
 
-        // === CONDIÇÃO DE VITÓRIA (estabilidade > 2s nas fases difíceis) ===
+        // === CONDIÇÃO DE ESTABILIZAÇÃO ===
         const stableThreshold = SIM_STATE.currentLevel === 1 ? 1.5 : 2.5;
         if (SIM_STATE.settleStabilityTimer > stableThreshold) {
             SIM_STATE.isRunning = false;
@@ -296,7 +358,7 @@ window.PhysicsEngine = {
             }
 
             const lvlName = window.LevelManager ? window.LevelManager.levels[SIM_STATE.currentLevel].name : `Fase ${SIM_STATE.currentLevel}`;
-            const code = window.CodeEditor ? window.CodeEditor.getValue() : document.getElementById('custom-code').value;
+            const code = window.CodeEditor ? window.CodeEditor.getValue() : (document.getElementById('custom-code') ? document.getElementById('custom-code').value : '');
 
             const payload = {
                 username: "pendente",
@@ -314,8 +376,6 @@ window.PhysicsEngine = {
 
             if (window.UIManager && window.UIManager.showResultModal) {
                 window.UIManager.showResultModal(payload);
-            } else {
-                console.warn("UIManager.showResultModal não disponível. Simulação encerrada mas não salva.");
             }
 
             return;

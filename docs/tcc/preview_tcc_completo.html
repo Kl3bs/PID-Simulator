@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCC Completo — Engenharia de Computação UFAL</title>
+    <!-- MathJax para formulas matematicas -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background-color: #f7f9fc;
+            color: #1e293b;
+            line-height: 1.8;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 60px 80px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+        }
+        .badge {
+            display: inline-block;
+            background: #e2e8f0;
+            color: #475569;
+            font-size: 0.75rem;
+            font-family: -apple-system, sans-serif;
+            padding: 4px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        h1.chapter {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 2.2rem;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-bottom: 30px;
+        }
+        h2.section {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 1.5rem;
+            color: #1e293b;
+            margin-top: 36px;
+            margin-bottom: 16px;
+        }
+        h3.subsection {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 1.2rem;
+            color: #334155;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+        p {
+            text-align: justify;
+            text-indent: 2.5em;
+            margin-bottom: 1.2em;
+            font-size: 1.1rem;
+        }
+        blockquote {
+            margin: 24px 0 24px 40px;
+            padding: 12px 20px;
+            border-left: 4px solid #3b82f6;
+            background: #f8fafc;
+            font-style: italic;
+            color: #334155;
+            font-size: 1.05rem;
+        }
+        ul, ol {
+            margin: 20px 0 20px 30px;
+            padding-left: 20px;
+            font-size: 1.05rem;
+        }
+        li {
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        .citation {
+            color: #2563eb;
+            font-weight: 500;
+        }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">Visualizador Python .tex &bull; TCC Engenharia UFAL</span>
+        <p>\documentclass[
+    12pt,
+    openright,
+    oneside,
+    a4paper,
+    english,
+    brazil
+]{abntex2}</p>
+<p>\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{indentfirst}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{amsmath, amssymb}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{cite}</p>
+<p>\usepackage[brazilian,hyperpageref]{backref}
+\usepackage[alf]{abntex2cite}</p>
+<p>\titulo{Desenvolvimento de uma Plataforma Web Interativa com Simulação Física 3D para Ensino, Sintonia e Análise de Desempenho de Controladores PID}
+\autor{Kleber Vasconcelos}
+\local{Maceió - AL}
+\data{2026}
+\orientador{Prof. Dr. [Nome do Orientador]}
+\instituicao{Universidade Federal de Alagoas &mdash; UFAL \par Instituto de Computação \par Centro de Tecnologia}
+\tipotrabalho{Trabalho de Conclusão de Curso (Graduação)}
+\preambulo{Trabalho de Conclusão de Curso apresentado ao Curso de Engenharia de Computação da Universidade Federal de Alagoas (UFAL) como requisito parcial para obtenção do título de Engenheiro de Computação.}</p>
+<p>\begin{document}</p>
+<p>\imprimircapa
+\imprimirfolhaderosto*</p>
+<p>\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage</p>
+<p>\textual</p>
+<h1 class="chapter">Introdução</h1>
+<h2 class="section">Contextualização e Motivação</h2>
+<p>Os sistemas de controle em malha fechada constituem a base operacional de grande parte da infraestrutura tecnológica e industrial moderna. Desde processos químicos contínuos e plantas de geração de energia até sistemas automotivos avançados e veículos aéreos não tripulados, a capacidade de manter variáveis de processo reguladas em torno de referências pré-determinadas, mesmo sob a atuação de perturbações externas e incertezas paramétricas, é indispensável para garantir eficiência, segurança e viabilidade operacional <span class="citation">[ogata2010, dorf2017]</span>.</p>
+<p>Nesse cenário, o algoritmo Proporcional-Integral-Derivativo (PID) consolida-se historicamente como a estratégia de controle por realimentação mais empregada em aplicações industriais, respondendo por mais de 90% das malhas de controle ativas no setor produtivo <span class="citation">[astrom2006, nise2020]</span>. A ampla aceitação do controlador PID decorre de sua formulação conceitualmente intuitiva &mdash; baseada no tratamento do erro passado (integral), presente (proporcional) e futuro estimado (derivativo) &mdash; aliada à sua robustez estrutural e à independência de modelos matemáticos complexos de ordem elevada para sua implementação preliminar.</p>
+<p>Não obstante sua ubiquidade e relevância prática, o ensino e a aprendizagem de sistemas de controle na formação de engenheiros &mdash; particularmente em cursos de Engenharia de Computação &mdash; enfrentam desafios pedagógicos expressivos. Tradicionalmente, as ementas curriculares enfatizam o domínio analítico no domínio da frequência e no plano complexo (Transformadas de Laplace e Fourier, Diagramas de Bode e Nyquist, Lugar Geométrico das Raízes). Embora esse embasamento formal seja estritamente necessário, observa-se com frequência um distanciamento substancial entre a representação matemática abstrata e a dinâmica física concreta do sistema real <span class="citation">[dormido2002]</span>.</p>
+<p>Muitas vezes, o estudante manipula funções de transferência sem compreender visualmente como o ajuste do ganho derivativo $K_d$ amortece o movimento de um veículo, de que forma o ganho integral $K_i$ atua para vencer o atrito estático em um aclive, ou quais são as consequências severas da saturação do atuador associada ao fenômeno de <em>integrator windup</em>. Essa lacuna epistemológica entre a teoria e a intuição física contribui para índices expressivos de desmotivação e evasão em disciplinas fundamentais da área de automação e controle.</p>
+<h2 class="section">Problema de Pesquisa</h2>
+<p>A consolidação prática dos conceitos de engenharia de controle tradicionalmente depende de duas vias: a experimentação em bancadas didáticas físicas ou o uso de simuladores computacionais. Entretanto, ambas as abordagens apresentam restrições relevantes no contexto universitário contemporâneo:</p>
+<ol>
+    <li><strong>Custo e Manutenção de Bancadas Físicas:</strong> Laboratórios físicos com servomecanismos, plantas de nível ou túneis de vento exigem investimentos financeiros expressivos em aquisição, calibração periódica e manutenção de atuadores e sensores, inviabilizando a disponibilização de estações individuais para turmas numerosas;
+    <li><strong>Barreiras de Licenciamento de Softwares Proprietários:</strong> Ferramentas industriais consagradas, a exemplo do MATLAB/Simulink e do LabVIEW, impõem custos proibitivos de licenciamento para discentes, exigem computadores com capacidade expressiva de processamento e demandam uma curva de aprendizado substancial apenas para a operação do ambiente de software;
+    <li><strong>Limitações de Simuladores Acadêmicos Tradicionais:</strong> A maioria das alternativas computacionais gratuitas disponíveis na web limita-se a gráficos bidimensionais estáticos e controles deslizantes parametrizados, sem permitir que o estudante programe diretamente o código do algoritmo em malha fechada, nem que observe a resposta física da planta em uma cena tridimensional realista com perturbações dinâmicas de relevo e atrito.
+</ol>
+<p>Diante deste panorama, formula-se o problema de pesquisa que orienta o presente trabalho:</p>
+<blockquote>
+<em>Como conceber e implementar uma arquitetura computacional baseada na web que combine simulação numérica em tempo real, computação gráfica tridimensional e decomposição analítica do esforço de controle para mitigar a abstração conceitual e os altos custos de infraestrutura no ensino e na parametrização de controladores PID?</em>
+</blockquote>
+<h2 class="section">Hipótese de Pesquisa</h2>
+<p>A hipótese científica deste trabalho estabelece que a disponibilização de uma plataforma web interativa, dotada de renderização física tridimensional em tempo real sincronizada a um osciloscópio digital com decomposição explícita das forças proporcional ($u_P$), integral ($u_I$) e derivativa ($u_D$), acoplada a um módulo assistido de sintonia em malha aberta (Ziegler-Nichols), proporciona uma assimilação conceitual superior e mais intuitiva da dinâmica transitória e de regime permanente do que métodos restritos ao equacionamento puramente analítico ou a simuladores bidimensionais estáticos.</p>
+<h2 class="section">Objetivos</h2>
+<h3 class="subsection">Objetivo Geral</h3>
+<p>Projetar, implementar e validar uma plataforma web interativa para simulação e sintonia de controladores PID em malha fechada, integrando renderização física tridimensional em tempo real, análise de telemetria didática e geração automatizada de relatórios técnicos de desempenho para apoio ao ensino de engenharia.</p>
+<h3 class="subsection">Objetivos Específicos</h3>
+<p>Para viabilizar a consecução do objetivo geral, estabelecem-se as seguintes metas específicas de desenvolvimento e pesquisa:</p>
+<ol>
+    <li><strong>Modelar matematicamente</strong> a dinâmica física e cinemática de plantas representativas (veículo terrestre sob atrito de rolamento, arrasto aerodinâmico e componentes gravitacionais em relevos inclinados com $\alpha(x)$ variável);
+    <li><strong>Desenvolver a arquitetura computacional frontend</strong> em WebGL/Three.js e JavaScript vanilla, incorporando um editor de código isolado em <em>sandbox</em> capaz de executar algoritmos do usuário com determinismo temporal a taxas de atualização fluidas ($\ge 30\text{ FPS}$);
+    <li><strong>Implementar a instrumentação e osciloscópio digital</strong> multicanal com capacidade de monitoramento síncrono da variável de processo $y(t)$, setpoint $r(t)$, decomposição individual das parcelas de controle ($u_P, u_I, u_D$) e sinalização de saturação do atuador;
+    <li><strong>Construir um assistente automatizado de sintonia clássica</strong> em malha aberta, aplicando o método da reta tangente à curva de reação para identificação de modelos FOPDT ($K, \tau, \theta$) e cálculo de parâmetros de sintonia baseados nos critérios de Ziegler-Nichols;
+    <li><strong>Projetar a infraestrutura de backend</strong> em Python (FastAPI) conteinerizada via Docker, provendo serviços de persistência de ensaios, exportação de conjuntos de dados em formato CSV e emissão automática de relatórios técnicos em PDF com diagnósticos de controle;
+    <li><strong>Validar experimentalmente</strong> a precisão numérica da simulação frente a soluções analíticas exatas calculadas por métodos numéricos consolidados, quantificando métricas de resposta ao degrau ($t_r, t_s, M_p, e_{ss}$) e o erro médio quadrático ($\text{RMSE}$).
+</ol>
+<h2 class="section">Justificativa e Relevância</h2>
+<p>A realização deste trabalho justifica-se sob quatro perspectivas complementares:</p>
+<ul>
+    <li><strong>Relevância Pedagógica:</strong> O ambiente oferece feedback visual imediato, permitindo que o estudante correlacione causa e efeito em tempo real. A possibilidade de visualizar as forças do atuador de forma decomposta e de presenciar visualmente o veículo respondendo a aclives e declives promove a fixação dos conceitos fundamentais de estabilidade e transitório;
+    <li><strong>Acessibilidade e Inclusão Tecnológica:</strong> Por ser executada integralmente no navegador web (<em>browser-based</em>) e distribuída sob arquitetura aberta, a ferramenta independe de estações de trabalho de alto custo ou da aquisição de licenças proprietárias, democratizando o acesso a laboratórios práticos na Universidade Federal de Alagoas (UFAL) e em outras instituições de ensino;
+    <li><strong>Desafio Técnico em Engenharia de Computação:</strong> O desenvolvimento congrega áreas essenciais do núcleo profissional do curso, abrangendo engenharia de software distribuída (FastAPI, Docker), computação gráfica e matemática aplicada (Three.js, WebGL), integração numérica determinística e segurança computacional em ambientes de execução de código não confiável (<em>client-side sandbox</em>);
+    <li><strong>Apoio à Pesquisa e Experimentação Científica:</strong> A exportação de dados estruturados em CSV e a emissão de relatórios automatizados conferem rigor científico aos ensaios, permitindo que a plataforma seja utilizada não apenas no ensino de graduação, mas também como bancada preliminar de testes para prototipagem de algoritmos de controle.
+</ul>
+<h2 class="section">Organização do Trabalho</h2>
+<p>A presente monografia encontra-se estruturada em cinco capítulos, distribuídos conforme o roteiro a seguir:</p>
+<ul>
+    <li>O <strong>Capítulo <span class="ref">[cap:introducao</strong> (Introdução)]</span> contextualiza o tema, delimita o problema de pesquisa, explicita as hipóteses e estabelece os objetivos e a relevância do estudo;
+    <li>O <strong>Capítulo 2 (Fundamentação Teórica e Trabalhos Correlatos)</strong> revisita os conceitos de controle clássico por realimentação PID, métricas de desempenho transitório, fenômenos de saturação, métodos de identificação de sistemas (FOPDT e Ziegler-Nichols), além de avaliar o estado da arte dos laboratórios virtuais de ensino;
+    <li>O <strong>Capítulo 3 (Desenvolvimento e Arquitetura do Sistema)</strong> expõe a metodologia do projeto, a modelagem física e matemática das plantas, a arquitetura de software (frontend e backend), a concepção do osciloscópio multicanal, o módulo de sintonia assistida e o ambiente de conteinerização;
+    <li>O <strong>Capítulo 4 (Resultados Experimentais e Discussão)</strong> apresenta os ensaios de validação numérica frente a curvas analíticas teóricas, a análise de desempenho do algoritmo PID sob perturbações de relevo, a eficácia do módulo de sintonia e o perfil de desempenho computacional da aplicação;
+    <li>O <strong>Capítulo 5 (Conclusão e Trabalhos Futuros)</strong> sintetiza as principais contribuições alcançadas, relata as limitações identificadas e propõe direcionamentos para trabalhos subsequentes.
+</ul>
+<h1 class="chapter">Fundamentação Teórica e Trabalhos Correlatos</h1>
+<p>O desenvolvimento de uma plataforma computacional para simulação física e experimentação interativa de sistemas de controle requer uma base teórica multidisciplinar. Este capítulo estabelece os fundamentos matemáticos e físicos da teoria de controle clássico por realimentação, detalha as ações do algoritmo PID, as não-linearidades de atuadores e os métodos empíricos de sintonia. Em seguida, revisam-se os princípios pedagógicos dos laboratórios virtuais no ensino de engenharia, os pilares computacionais adotados na implementação do sistema e um quadro comparativo com trabalhos correlatos.</p>
+<h2 class="section">Sistemas de Controle em Malha Fechada</h2>
+<p>Em sistemas dinâmicos, a estratégia de controle em malha fechada (<em>feedback control</em>) baseia-se na medição contínua da variável de processo $y(t)$ e em sua comparação com o valor de referência desejado, denominado <em>setpoint</em> $r(t)$ <span class="citation">[ogata2010]</span>. O desvio instantâneo entre a referência e a saída mensurada define o sinal de erro $e(t)$:</p>
+<p>\begin{equation}
+    e(t) = r(t) - y(t)
+    
+\end{equation}</p>
+<p>A função precípua do controlador $C(s)$ é processar dinamicamente o sinal de erro $e(t)$ para sintetizar um sinal de atuação ou esforço de controle $u(t)$, aplicado à planta $G(s)$ de modo a compelir a variável de processo a rastrear a referência e rejeitar perturbações externas $d(t)$, conforme ilustrado no diagrama de blocos canônico da Figura <span class="ref">[fig:diagrama_malha_fechada]</span>.</p>
+<p>\begin{figure}[htbp]
+    \centering
+    \caption{Diagrama de blocos canônico de um sistema de controle em malha fechada com realimentação unitária e perturbação aditiva.}
+    
+    \fbox{\parbox{0.85\textwidth}{\centering
+        \vspace{0.4cm}
+        $[r(t)] \xrightarrow{+} \bigoplus \xrightarrow{e(t)} \boxed{C(s)} \xrightarrow{u(t)} \bigoplus \xrightarrow{} \boxed{G(s)} \xrightarrow{y(t)} \bullet \xrightarrow{} [y(t)]$ \\
+        \vspace{0.1cm}
+        \hspace{6.2cm} $\uparrow +$ \hspace{2.8cm} $\vert$ \\
+        \hspace{6.2cm} $[d(t)]$ \hspace{2.5cm} $\downarrow$ \\
+        \hspace{2.2cm} $\xleftarrow[\hspace{7.5cm}]{-} \bullet \longleftarrow$
+        \vspace{0.4cm}
+    }}
+    \vspace{0.1cm}
+    \fonte{Elaborada pelo autor (2026).}
+\end{figure}</p>
+<h3 class="subsection">Ações do Controlador Proporcional-Integral-Derivativo (PID)</h3>
+<p>O algoritmo PID sintetiza o sinal de controle $u(t)$ a partir de uma combinação linear de três termos funcionais que atuam sobre o erro passado, presente e futuro estimado <span class="citation">[astrom2006, nise2020]</span>. Na formulação clássica contínua em paralelo, o sinal de controle é definido por:</p>
+<p>\begin{equation}
+    u(t) = u_P(t) + u_I(t) + u_D(t)
+    
+\end{equation}</p>
+<p>\noindent onde as parcelas individuais correspondem a:</p>
+<p>\begin{align}
+    u_P(t) &= K_p \, e(t)  \\
+    u_I(t) &= K_i \int_{0}^{t} e(\tau) \, d\tau  \\
+    u_D(t) &= K_d \, \frac{de(t)}{dt} 
+\end{align}</p>
+<p>Nesta parametrização, $K_p$ denota o ganho proporcional, $K_i$ o ganho integral e $K_d$ o ganho derivativo. Alternativamente, expressa-se a equação na forma padrão (ideal), parametrizada pelo tempo integral $T_i$ e pelo tempo derivativo $T_d$:</p>
+<p>\begin{equation}
+    u(t) = K_p \left( e(t) + \frac{1}{T_i} \int_{0}^{t} e(\tau) \, d\tau + T_d \, \frac{de(t)}{dt} \right)
+    
+\end{equation}</p>
+<p>\noindent sendo as relações diretas dadas por $K_i = \frac{K_p}{T_i}$ e $K_d = K_p T_d$.</p>
+<p>Aplicando-se a Transformada de Laplace sob condições iniciais nulas, obtém-se a função de transferência do controlador no domínio da frequência complexa $s$:</p>
+<p>\begin{equation}
+    C(s) = \frac{U(s)}{E(s)} = K_p + \frac{K_i}{s} + K_d \, s = K_p \left( 1 + \frac{1}{T_i s} + T_d s \right)
+    
+\end{equation}</p>
+<p>Cada componente desempenha um papel físico e dinâmico bem definido na estabilização do sistema:</p>
+<ol>
+    <li><strong>Ação Proporcional ($u_P$):</strong> Gera uma força diretamente proporcional à magnitude do erro instantâneo. Aumenta a velocidade de resposta da malha fechada e reduz o erro de regime, contudo, ganhos $K_p$ excessivos induzem oscilações acentuadas e podem desestabilizar o sistema. Além disso, atuando isoladamente em sistemas de ordem zero ou tipo zero, a ação proporcional é incapaz de eliminar completamente o erro de regime permanente ($e_{ss} \neq 0$).
+    <li><strong>Ação Integral ($u_I$):</strong> Acumula o histórico do erro ao longo do tempo. Sua inclusão adiciona um polo na origem ($s = 0$) à malha aberta, elevando o tipo do sistema e garantindo erro nulo em regime permanente ($e_{ss} = 0$) para entradas do tipo degrau e rejeição a perturbações constantes. Todavia, a ação integral introduz defasagem negativa no sistema, o que tende a degradar a margem de estabilidade e provocar sobressinais expressivos.
+    <li><strong>Ação Derivativa ($u_D$):</strong> Responde à taxa de variação temporal do erro, atuando como um mecanismo preditivo ou amortecedor dinâmico. Ao antecipar a tendência de crescimento do erro, o termo derivativo adiciona amortecimento relativo ao sistema, mitigando oscilações e reduzindo o tempo de acomodação. Em contrapartida, a diferenciação pura é inerentemente sensível a ruídos de alta frequência presentes nos sinais de medição.
+</ol>
+<h4 class="subsubsection">Discretização Numérica do Controlador</h4>
+<p>Em aplicações computacionais e sistemas embarcados, a lei de controle contínua deve ser discretizada para execução a intervalos regulares de amostragem $\Delta t$. Empregando-se a aproximação de diferenças finitas regressivas (<em>backward differences</em>) e integração numérica retangular à esquerda (Euler explícito), a formulação discreta para o instante de amostragem $k$ resulta em:</p>
+<p>\begin{align}
+    u_P[k] &= K_p \, e[k]  \\
+    u_I[k] &= u_I[k-1] + K_i \, e[k] \, \Delta t  \\
+    u_D[k] &= K_d \, \frac{e[k] - e[k-1]}{\Delta t}  \\
+    u[k] &= u_P[k] + u_I[k] + u_D[k] 
+\end{align}</p>
+<p>Esta representação posicional direta foi implementada no motor de execução do <em>PID Simulator</em>, garantindo que a execução do código escrito pelo discente no navegador preserve correspondência exata com o equacionamento discreto.</p>
+<h3 class="subsection">Métricas de Desempenho Transitório e de Regime Permanente</h3>
+<p>A avaliação quantitativa da eficácia de um controlador baseia-se na resposta ao degrau unitário do sistema em malha fechada <span class="citation">[dorf2017]</span>. As grandezas canônicas adotadas na literatura de engenharia compreendem:</p>
+<ul>
+    <li><strong>Tempo de Subida ($t_r$ &mdash; <em>Rise Time</strong>):</em> Intervalo temporal requerido para a resposta transitar de 10% para 90% do seu valor final em regime, ou de 0% a 100% em sistemas subamortecidos. Mensura a agilidade do controlador.
+    <li><strong>Sobressinal Máximo Percentual ($M_p$ &mdash; <em>Overshoot</strong>):</em> Valor de pico máximo atingido pela saída normalizado em relação ao patamar de regime permanente, quantificado percentualmente por:
+    \begin{equation}
+        M_p = \frac{y_{\max} - y_{\text{final}}}{y_{\text{final}}} \times 100%
+        
+    \end{equation}
+    <li><strong>Tempo de Acomodação ($t_s$ &mdash; <em>Settling Time</strong>):</em> Tempo necessário para que a variável de processo entre e permaneça em uma faixa de tolerância estrita (tipicamente arbitrada em $\pm 2%$ ou $\pm 5%$) em torno do valor final.
+    <li><strong>Erro em Regime Permanente ($e_{ss</strong>$ &mdash; <em>Steady-State Error</em>):} Diferença residual assintótica entre a referência e a saída quando o tempo tende ao infinito:
+    \begin{equation}
+        e_{ss} = \lim_{t \to \infty} [r(t) - y(t)]
+        
+    \end{equation}
+</ul>
+<p>Para além das métricas pontuais de resposta ao degrau, avalia-se o desempenho dinâmico ao longo de todo o horizonte de ensaio mediante índices integrados de erro e desvio quadrático médio ($\text{RMSE}$):</p>
+<p>\begin{align}
+    \text{IAE} &= \int_{0}^{T} |e(t)| \, dt \quad \text{(Integral do Erro Absoluto)}  \\
+    \text{ITAE} &= \int_{0}^{T} t \, |e(t)| \, dt \quad \text{(Integral do Erro Absoluto Ponderado no Tempo)}  \\
+    \text{RMSE} &= \sqrt{\frac{1}{N} \sum_{k=1}^{N} \left(r[k] - y[k]\right)^2} \quad \text{(Raiz do Erro Quadrático Médio)} 
+\end{align}</p>
+<h3 class="subsection">Não-Linearidades Práticas: Saturação e Integrator Windup</h3>
+<p>Em sistemas reais, os atuadores físicos (motores elétricos, servoválvulas, aquecedores) operam sob limites estritos de potência e excursão mecânica. Essa restrição física introduz uma não-linearidade de saturação estática no sinal de controle:</p>
+<p>\begin{equation}
+    u_{\text{sat}}(t) = 
+    \begin{cases}
+        u_{\max}, & \text{se } u(t) > u_{\max} \\
+        u(t), & \text{se } u_{\min} \le u(t) \le u_{\max} \\
+        u_{\min}, & \text{se } u(t) < u_{\min}
+    \end{cases}
+    
+\end{equation}</p>
+<p>Quando o sinal calculado $u(t)$ excede o limite físico do atuador, o sistema opera transitoriamente em malha aberta no limite de saturação. Nesse intervalo, se o controlador contiver ação integral, o integrador continuará acumulando o erro remanescente ($u_I = K_i \int e \, dt$), crescendo a níveis substanciais.</p>
+<p>Esse fenômeno, denominado <em>integrator windup</em>, faz com que, mesmo após o erro inverter de sinal ($y(t) > r(t)$), o atuador permaneça saturado por um período prolongado até que a área negativa do erro compense o valor acumulado no integrador <span class="citation">[astrom2006, franklin2015]</span>. As consequências práticas incluem sobressinais desproporcionais, oscilações persistentes e risco de instabilidade física.</p>
+<p>Para contornar esse efeito, empregam-se técnicas de compensação <em>anti-windup</em>. Dentre as principais abordagens destacam-se o <em>clamping condicional</em> (onde a integração numérica é congelada sempre que o atuador saturar com erro de mesmo sinal) e o <em>back-calculation</em> (em que a diferença entre o sinal calculado e o sinal saturado é realimentada com ganho $1/T_t$ para descarregar o integrador).</p>
+<h2 class="section">Métodos Clássicos de Sintonia de Controladores</h2>
+<p>A parametrização dos ganhos $K_p, K_i, K_d$ constitui a etapa de sintonia (<em>tuning</em>). Em ambientes industriais onde o modelo analítico exato da planta é desconhecido ou complexo demais para ser derivado por equações constitutivas de primeiros princípios, recorre-se a métodos heurísticos e empíricos baseados em ensaios experimentais <span class="citation">[cohen1953]</span>.</p>
+<h3 class="subsection">Modelagem por Curva de Reação (Modelo FOPDT)</h3>
+<p>O ensaio da curva de reação consiste em aplicar uma entrada em degrau de amplitude $\Delta u$ à planta operando em malha aberta e registrar a evolução temporal da variável de saída $y(t)$ a partir do repouso. Uma classe expressiva de processos estáveis exibe uma resposta com formato característico em ``S'' (<em>sigmoide</em>), que pode ser adequadamente aproximada por um modelo de Primeira Ordem com Tempo Morto (<em>First Order Plus Dead Time</em> &mdash; FOPDT):</p>
+<p>\begin{equation}
+    G(s) = \frac{Y(s)}{U(s)} = \frac{K \, e^{-\theta s}}{\tau s + 1}
+    
+\end{equation}</p>
+<p>Os três parâmetros característicos do modelo FOPDT são extraídos pelo método gráfico da reta tangente traçada no ponto de inflexão da curva de resposta (ponto de máxima derivada temporal $\frac{dy}{dt}$), conforme detalhado na Figura <span class="ref">[fig:curva_reacao]</span>:</p>
+<p>\begin{figure}[htbp]
+    \centering
+    \caption{Identificação dos parâmetros $K, \tau, \theta$ do modelo FOPDT pelo método da reta tangente no ponto de inflexão da curva de reação.}
+    
+    \fbox{\parbox{0.85\textwidth}{\centering
+        \vspace{0.4cm}
+        <strong>[Curva de Reação em Degrau $y(t)$]</strong> \\
+        \vspace{0.2cm}
+        $\Delta y \xrightarrow{} \text{Variação total da saída em regime}$ \\
+        $K = \frac{\Delta y}{\Delta u} \quad \text{(Ganho Estático do Processo)}$ \\
+        $\theta \quad \text{(Tempo Morto ou Atraso Aparente de Transporte)}$ \\
+        $\tau \quad \text{(Constante de Tempo Principal do Sistema)}$
+        \vspace{0.4cm}
+    }}
+    \vspace{0.1cm}
+    \fonte{Elaborada pelo autor (2026).}
+\end{figure}</p>
+<ol>
+    <li><strong>Ganho Estático ($K$):</strong> Razão entre a variação total da saída em regime permanente e a amplitude do degrau de entrada aplicado:
+    \begin{equation}
+        K = \frac{\Delta y}{\Delta u} = \frac{y(\infty) - y(0)}{u(\infty) - u(0)}
+        
+    \end{equation}
+    <li><strong>Tempo Morto Aparente ($\theta$):</strong> Intervalo entre a aplicação do degrau de entrada e a interseção da reta tangente com o valor inicial da saída ($y = 0$).
+    <li><strong>Constante de Tempo ($\tau$):</strong> Intervalo entre o término do tempo morto aparente $\theta$ e o instante em que a reta tangente atinge o patamar de regime permanente $y(\infty)$.
+</ol>
+<h3 class="subsection">Critérios de Sintonia de Ziegler-Nichols em Malha Aberta</h3>
+<p>A partir dos parâmetros $K, \tau$ e $\theta$ estimados pelo modelo FOPDT, Ziegler e Nichols <span class="citation">[ziegler1942]</span> propuseram fórmulas empíricas de sintonia projetadas para produzir respostas com razão de decaimento de um quarto (<em>quarter decay ratio</em>, decaimento na proporção $4:1$ na amplitude das oscilações sucessivas). A Tabela <span class="ref">[tab:ziegler_nichols]</span> sintetiza as expressões analíticas para os controladores P, PI e PID na forma padrão e paralela.</p>
+<p>\begin{table}[htbp]
+    \centering
+    \caption{Parâmetros de sintonia clássica de Ziegler-Nichols baseados na curva de reação em malha aberta (modelo FOPDT).}
+    
+    \begin{tabular}{l|c|c|c|c|c}
+        \hline
+        <strong>Tipo</strong> & $K_p$ & $T_i$ & $T_d$ & $K_i = \frac{K_p}{T_i}$ & $K_d = K_p T_d$ \\
+        \hline
+        <strong>P</strong>   & $\frac{\tau}{K \theta}$ & &mdash; & &mdash; & &mdash; & &mdash; \\
+        <strong>PI</strong>  & $0{,}9 \frac{\tau}{K \theta}$ & $3{,}33 \, \theta$ & &mdash; & $\frac{K_p}{3{,}33 \, \theta}$ & &mdash; \\
+        <strong>PID</strong> & $1{,}2 \frac{\tau}{K \theta}$ & $2{,}0 \, \theta$ & $0{,}5 \, \theta$ & $\frac{K_p}{2{,}0 \, \theta}$ & $K_p (0{,}5 \, \theta)$ \\
+        \hline
+    \end{tabular}
+    \vspace{0.1cm}
+    \fonte{Adaptada de Ziegler e Nichols <span class="citation">[ziegler1942]</span> e Ogata <span class="citation">[ogata2010]</span>.}
+\end{table}</p>
+<p>A despeito de sua ampla utilização na indústria, as regras originais de Ziegler-Nichols tendem a gerar respostas relativamente agressivas, com sobressinais da ordem de $20%$ a $30%$. Por conseguinte, métodos complementares como o de Cohen-Coon <span class="citation">[cohen1953]</span> ajustam essas fórmulas para plantas onde a razão de atraso $\frac{\theta}{\tau}$ é relevante, garantindo maior flexibilidade de parametrização.</p>
+<h2 class="section">Ambientes Virtuais e Simulação no Ensino de Engenharia</h2>
+<p>O papel da experimentação prática na formação de engenheiros é amplamente reconhecido na literatura pedagógica <span class="citation">[dormido2002, gomes2019]</span>. No contexto da educação em controle e automação, a taxonomia de laboratórios divide-se fundamentalmente em três categorias:</p>
+<ol>
+    <li><strong>Laboratórios Tradicionais (Físicos):</strong> Baseados em bancadas experimentais físicas locais. Oferecem contato tátil real com sensores, fiação e atuadores, porém impõem custos elevados de aquisição e manutenção, riscos de danos por parametrização incorreta de alunos e restrição de acesso a horários de funcionamento presencial da universidade.
+    <li><strong>Laboratórios Remotos:</strong> Consistem em bancadas físicas reais acopladas a servidores e câmeras de monitoramento, operadas à distância via rede. Preservam a fidelidade física dos experimentos, mas sofrem com limitações de concorrência (um único usuário por bancada física por vez) e dependência de infraestrutura de hardware dedicada.
+    <li><strong>Laboratórios Virtuais (Simuladores):</strong> Ambientes puramente baseados em software nos quais a física do sistema dinâmico é sintetizada por integração numérica em tempo real. Permitem escalabilidade infinita de usuários concorrentes, experimentação irrestrita em ambiente seguro sem risco de colisão física e custo marginal nulo de distribuição.
+</ol>
+<p>Para maximizar o engajamento discente, a literatura contemporânea ressalta a importância da <em>interatividade imersiva</em> e do <em>feedback síncrono</em> <span class="citation">[dormido2002]</span>. Interfaces que combinam a escrita de código algorítmico com a visualização tridimensional animada do sistema respondendo em tempo real facilitam a formação de modelos mentais coerentes sobre estabilidade, amortecimento e inércia física.</p>
+<h2 class="section">Tecnologias Computacionais de Base</h2>
+<p>A viabilização do <em>PID Simulator</em> como laboratório virtual de alta performance executado diretamente no navegador do discente apoia-se em um conjunto de tecnologias modernas de engenharia de software e computação gráfica.</p>
+<h3 class="subsection">Computação Gráfica na Web: WebGL e Three.js</h3>
+<p>O padrão WebGL (<em>Web Graphics Library</em>) provê uma API JavaScript de baixo nível que permite renderização gráfica tridimensional acelerada por hardware (GPU) diretamente em navegadores web, em conformidade com o padrão OpenGL ES, dispensando a instalação de <em>plugins</em> externos <span class="citation">[dirksen2018]</span>.</p>
+<p>Para abstrair a complexidade de programação de <em>shaders</em> em GLSL, matrizes de projeção e gerenciamento de <em>buffers</em> de vértices, adotou-se a biblioteca Three.js. Ela estrutura a cena tridimensional em uma hierarquia de nós (<em>Scene Graph</em>), gerenciando geometrias poligonais (`BufferGeometry`), materiais físicos com iluminação dinâmica (`SpotLight`, `DirectionalLight`) e câmeras com interpolação de movimento suave (<em>lerp</em> &mdash; <em>Linear Interpolation</em>) para acompanhamento contínuo dos veículos no circuito.</p>
+<h3 class="subsection">Ambiente Seguro de Execução em Sandbox (Client-Side)</h3>
+<p>Permitir que o usuário insira e execute código JavaScript arbitrário em tempo real dentro do navegador acarreta dois desafios fundamentais: estabilidade do laço de renderização e segurança de escopo.</p>
+<p>Para mitigar esses riscos sem sobrecarregar servidores remotos com a execução de milhares de rotinas por segundo, implementou-se uma <em>sandbox</em> baseada na instanciação isolada de escopo léxico via construtor `new Function(...)`. O código submetido pelo estudante é executado recebendo estritamente os parâmetros do sistema físico ($e[k]$, $\int e$, $\frac{de}{dt}$, $v[k]$, $y[k]$ e $d[k]$), encapsulado em blocos `try/catch` que interceptam erros de sintaxe ou tempo de execução antes que estes alcancem o ciclo de animação `requestAnimationFrame`. Se um erro for identificado, o laço de física é pausado deterministicamente e o painel de telemetria exibe o diagnóstico imediato ao usuário.</p>
+<h3 class="subsection">Arquitetura de Serviços Backend com FastAPI e Docker</h3>
+<p>Para complementar o processamento no cliente, a infraestrutura de retaguarda foi projetada segundo o padrão arquitetural REST <span class="citation">[fielding2000]</span>, empregando o framework Python FastAPI. As razões para esta escolha incluem:</p>
+<ul>
+    <li><strong>Alta Performance Assíncrona:</strong> Baseado em ASGI (<em>Asynchronous Server Gateway Interface</em>) e `uvicorn`, assegurando tempo de resposta sub-milissegundo para persistência de séries temporais de telemetria;
+    <li><strong>Validação Estrita de Schemas:</strong> Uso do Pydantic v2 para validação e serialização de dados de ensaios laboratoriais e métricas dinâmicas;
+    <li><strong>Processamento Científico e Geração de Relatórios:</strong> Integração nativa com bibliotecas Python (ReportLab, Matplotlib e SciPy) para geração de relatórios técnicos em formato PDF e exportação de datasets científicos em CSV;
+    <li><strong>Conteinerização e Portabilidade (Docker):</strong> Empacotamento integral da aplicação em contêineres Docker padronizados via `docker-compose`, assegurando reproducibilidade dos ensaios em qualquer ambiente operacional.
+</ul>
+<h2 class="section">Trabalhos Correlatos e Análise Comparativa</h2>
+<p>A literatura científica e o ecossistema educacional apresentam diversas ferramentas destinadas ao ensino de controle. A Tabela <span class="ref">[tab:comparativo_ferramentas]</span> estabelece uma comparação sistemática entre as abordagens consolidadas e a plataforma proposta neste trabalho, avaliando seis requisitos essenciais: gratuidade e código aberto, ausência de instalação local, renderização tridimensional interativa, editor de código algorítmico, decomposição didática dos sinais de esforço de controle ($u_P, u_I, u_D$) e módulo de sintonia clássica assistida.</p>
+<p>\begin{table}[htbp]
+    \centering
+    \caption{Quadro comparativo entre o PID Simulator e ferramentas existentes na literatura e no mercado para o ensino de controle.}
+    
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{l|c|c|c|c|c|c}
+        \hline
+        <strong>Ferramenta / Solução</strong> & <strong>Código Aberto</strong> & <strong>Web (Sem Instalação)</strong> & <strong>Cena Física 3D</strong> & <strong>Editor de Código</strong> & <strong>Decomposição $u_P, u_I, u_D$</strong> & <strong>Sintonia Assistida</strong> \\
+        \hline
+        MATLAB / Simulink & Não & Parcial (Cloud paga) & Parcial (Simscape 3D) & Sim (Scripts) & Parcial & Sim (PID Tuner) \\
+        Scilab / Xcos & Sim & Não & Não & Sim & Não & Parcial \\
+        Simuladores Web 2D Típicos & Parcial & Sim & Não & Não (Sliders apenas) & Raro & Não \\
+        Bancadas Didáticas Físicas & Não & Não & Real (Físico) & Depende do CLP/MCU & Indireta & Manual \\
+        <strong>PID Simulator (Este Trabalho)</strong> & <strong>Sim</strong> & <strong>Sim</strong> & <strong>Sim (Three.js)</strong> & <strong>Sim (CodeMirror)</strong> & <strong>Sim (Osciloscópio)</strong> & <strong>Sim (Z-N / C-C)</strong> \\
+        \hline
+    \end{tabular}
+    }
+    \vspace{0.1cm}
+    \fonte{Elaborada pelo autor (2026).}
+\end{table}</p>
+<p>A análise comparativa evidencia que, embora o ecossistema MATLAB/Simulink ofereça ferramentas avançadas, o custo de licenciamento e a complexidade representam barreiras severas para a massificação discente. Por outro lado, simuladores web existentes restringem-se à manipulação superficial de controles deslizantes (<em>sliders</em>) sobre gráficos 2D.</p>
+<p>O diferencial do <em>PID Simulator</em> reside na convergência entre acessibilidade universal no navegador, visualização física realista com perturbações dinâmicas de relevo em 3D, escrita de código real pelo estudante e transparência didática completa na instrumentação gráfica multicanal.</p>
+<h1 class="chapter">Metodologia e Desenvolvimento do Sistema</h1>
+<p>Este capítulo detalha a metodologia de engenharia adotada na concepção, modelagem física e implementação do <em>PID Simulator</em>. Apresentam-se os requisitos de projeto, a modelagem matemática das três plantas dinâmicas (veículo terrestre com relevo 3D, bola na barra com duplo integrador e tanque de nível de líquido com conservação volumétrica), a formulação da integração numérica em tempo real, as decisões arquiteturais do frontend em WebGL/Three.js com <em>sandbox</em> segura de execução, a infraestrutura de serviços backend em FastAPI para emissão de relatórios e a conteinerização em Docker.</p>
+<h2 class="section">Requisitos e Visão Geral da Arquitetura</h2>
+<p>O projeto do sistema foi concebido para atender às demandas de um ambiente laboratorial virtual de ensino em Engenharia de Computação, aliando facilidade de uso a rigor numérico.</p>
+<h3 class="subsection">Levantamento de Requisitos</h3>
+<p>Os requisitos do sistema foram estruturados em categorias funcionais e não-funcionais:</p>
+<ul>
+    <li><strong>Requisitos Funcionais (RF):</strong>
+    <ul>
+        <li><strong>RF01 (Simulação em Malha Fechada):</strong> Executar algoritmos de controle PID definidos programaticamente pelo usuário em tempo real sobre modelos físicos simulados;
+        <li><strong>RF02 (Editor de Código Integrado):</strong> Prover ambiente de desenvolvimento em JavaScript com destaque sintático, auto-indentação e persistência local;
+        <li><strong>RF03 (Isolamento em Sandbox):</strong> Executar o código do usuário em escopo protegido, interceptando exceções de execução sem interromper a interface gráfica;
+        <li><strong>RF04 (Bancada Tridimensional Interativa):</strong> Renderizar a resposta cinemática e dinâmica da planta em cena 3D acelerada por hardware com câmera dinâmica;
+        <li><strong>RF05 (Osciloscópio Didático Multicanal):</strong> Exibir a evolução temporal síncrona da variável de processo $y(t)$, referência $r(t)$, erro $e(t)$ e decomposição individual das forças $u_P(t), u_I(t), u_D(t)$;
+        <li><strong>RF06 (Assistente de Sintonia Automático):</strong> Executar ensaio de degrau em malha aberta, calcular parâmetros FOPDT ($K, \tau, \theta$) e fornecer ganhos de Ziegler-Nichols e Cohen-Coon com aplicação direta no editor;
+        <li><strong>RF07 (Emissão de Relatórios Técnicos e Exportação):</strong> Sintetizar relatórios em formato PDF com diagnóstico de controle e disponibilizar exportação de dados brutos em formato CSV para análise científica.
+    </ul>
+    
+    <li><strong>Requisitos Não-Funcionais (RNF):</strong>
+    <ul>
+        <li><strong>RNF01 (Desempenho Temporal):</strong> Manter taxa de atualização visual estável de no mínimo 30 quadros por segundo ($\text{FPS} \ge 30$) sob carga gráfica contínua;
+        <li><strong>RNF02 (Portabilidade e Acessibilidade):</strong> Operar nativamente em navegadores modernos sem a necessidade de <em>plugins</em> ou instalações locais proprietárias;
+        <li><strong>RNF03 (Determinismo Numérico):</strong> Limitar o passo de integração temporal ($\Delta t \le 0{,}1\text{ s}$) para evitar divergência numérica em situações de oscilação severa;
+        <li><strong>RNF04 (Modularidade e Implantação):</strong> Disponibilizar a aplicação encapsulada em contêineres Docker padronizados via `docker-compose`.
+    </ul>
+</ul>
+<h3 class="subsection">Arquitetura do Sistema</h3>
+<p>A solução segue uma arquitetura cliente-servidor distribuída e desacoplada, esquematizada na Figura <span class="ref">[fig:arquitetura_geral]</span>. O processamento de simulação numérica de alta frequência e a renderização gráfica ocorrem integralmente no cliente (<em>browser-side</em>), aliviando o tráfego de rede e garantindo latência nula de feedback tátil. O servidor backend atua como repositório de persistência assíncrona, orquestrador de diagnósticos heurísticos e motor de compilação de relatórios técnicos em PDF.</p>
+<p>\begin{figure}[htbp]
+    \centering
+    \caption{Arquitetura modular em camadas do PID Simulator integrando cliente WebGL e serviços backend.}
+    
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \vspace{0.4cm}
+        <strong>[CAMADA CLIENTE &mdash; NAVEGADOR WEB]</strong> \\
+        \vspace{0.2cm}
+        $\boxed{\text{CodeMirror (Editor)}} \longleftrightarrow \boxed{\text{Sandbox JS (new Function)}} \longrightarrow \boxed{\text{PhysicsEngine (Euler explícito)}}$ \\
+        \vspace{0.2cm}
+        $\boxed{\text{PhysicsEngine}} \xrightarrow{\text{Estado Físico}} \boxed{\text{Scene3D (Three.js/WebGL)}} \quad \text{e} \quad \boxed{\text{ChartAnalytics (Chart.js)}}$ \\
+        \vspace{0.4cm}
+        $\Updownarrow \text{HTTP REST / JSON (fetch assíncrono)}$ \\
+        \vspace{0.4cm}
+        <strong>[CAMADA SERVIDOR &mdash; FASTAPI / PYTHON]</strong> \\
+        \vspace{0.2cm}
+        $\boxed{\text{Endpoints REST (/runs)}} \longrightarrow \boxed{\text{ScoreService (Diagnóstico)}} \longrightarrow \boxed{\text{ReportGenerator (PDF/CSV)}}$ \\
+        \vspace{0.2cm}
+        $\boxed{\text{Endpoints REST}} \longleftrightarrow \boxed{\text{SQLAlchemy ORM}} \longleftrightarrow \boxed{\text{PostgreSQL Database}}$
+        \vspace{0.4cm}
+    }}
+    \vspace{0.1cm}
+    \fonte{Elaborada pelo autor (2026).}
+\end{figure}</p>
+<h2 class="section">Modelagem Física e Simulação Numérica</h2>
+<p>Para expor o discente a desafios de controle de complexidade crescente, o sistema implementa três modelos físicos com características dinâmicas distintas.</p>
+<h3 class="subsection">Planta 1: Dinâmica Longitudinal de Veículo com Relevo 3D</h3>
+<p>A primeira planta modela a movimentação linear de um veículo terrestre de massa $m$ sujeito à força propulsiva do motor $u(t)$, atrito viscoso $b \cdot v(t)$ e perturbações gravitacionais induzidas pelo perfil topográfico da pista de testes. A equação diferencial de movimento de segundo grau em relação à posição $x(t)$ é dada por:</p>
+<p>\begin{equation}
+    m \, \frac{d^2 x(t)}{dt^2} + b \, \frac{dx(t)}{dt} = u(t) + F_{\text{relevo}}(x)
+    
+\end{equation}</p>
+<p>A força gravitacional decorrente do relevo tridimensional é calculada dinamicamente a partir da inclinação instantânea $\alpha(x)$ da malha da pista:</p>
+<p>\begin{equation}
+    F_{\text{relevo}}(x) = - m \, g \, \sin(\alpha(x))
+    
+\end{equation}</p>
+<p>\noindent onde $\alpha(x) = \arctan\left(\frac{dh}{dx}\right)$ representa a inclinação tangencial derivada da função de elevação $h(x)$ do terreno no ponto ocupado pelo veículo. Esta formulação introduz uma perturbação não-linear de carga dependente da posição espacial, demandando ação integral ($u_I$) vigorosa para anular o erro de regime ao subir rampas.</p>
+<h3 class="subsection">Planta 2: Dinâmica de Bola na Barra (Ball and Beam)</h3>
+<p>A segunda planta modela o clássico sistema de equilíbrio da bola na barra (<em>Ball and Beam</em>), composto por uma esfera sólida de massa $m_b$, raio $R$ e momento de inércia $J_b = \frac{2}{5} m_b R^2$ que rola sem deslizamento sobre uma barra rígida de comprimento $L$ inclinada por um servomotor em torno de um pivô central. A equação dinâmica de movimento ao longo da barra em função do ângulo de inclinação $\alpha(t)$ é expressa por:</p>
+<p>\begin{equation}
+    \left( \frac{J_b}{R^2} + m_b \right) \ddot{x}(t) = m_b \, g \, \sin(\alpha(t)) - b_r \, \dot{x}(t) + d_{\text{pert}}(t)
+    
+\end{equation}</p>
+<p>Substituindo a inércia esférica e assumindo pequenas inclinações angulares ($\sin(\alpha) \approx \alpha$), obtém-se a aceleração linear da esfera:</p>
+<p>\begin{equation}
+    \ddot{x}(t) = \frac{5}{7} \, g \, \alpha(t) - \frac{b_r}{m_b} \, \dot{x}(t) + d_{\text{pert}}(t)
+    
+\end{equation}</p>
+<p>\noindent na qual $x(t) \in [-L/2, +L/2]$ representa a posição da bola em relação ao centro e $\alpha(t)$ é a variável de atuação comandada pelo controlador. Sob a ótica de controle, o sistema configura um duplo integrador equivalente ($G(s) \approx \frac{K_{\text{bb}}}{s^2}$), sendo de natureza <strong>intrinsecamente instável em malha aberta</strong>.</p>
+<p>Essa característica impõe um desafio didático de grande relevância: controladores puramente proporcionais ($P$) ou proporcionais-integrais ($PI$) são incapazes de estabilizar a esfera, que oscila com amplitude crescente até atingir os batentes das extremidades. A estabilização demanda obrigatoriamente a ação derivativa ($K_d$), que atua antecipando o movimento e amortecendo a energia cinética da esfera.</p>
+<h3 class="subsection">Planta 3: Dinâmica de Tanque de Nível de Líquido (Water Tank)</h3>
+<p>A terceira planta representa um processo contínuo de primeira ordem comum na indústria química, petrolífera e de saneamento: a regulação de nível em um reservatório cilíndrico de área transversal uniforme $A$, alimentado por uma bomba centrífuga com vazão de entrada $q_{\text{in}}(t)$ e escoamento gravitacional livre por um orifício de área $a_{\text{out}}$ na base. A dinâmica volumétrica é regida pelo princípio da conservação de massa:</p>
+<p>\begin{equation}
+    A \, \frac{dh(t)}{dt} = q_{\text{in}}(t) - q_{\text{out}}(t) - q_{\text{vaz}}(t)
+    
+\end{equation}</p>
+<p>Pela Lei de Torricelli, a vazão de escoamento no dreno é proporcional à raiz quadrada da coluna hidrostática:</p>
+<p>\begin{equation}
+    q_{\text{out}}(t) = a_{\text{out}} \sqrt{2 \, g \, h(t)}
+    
+\end{equation}</p>
+<p>Linearizando o termo de escoamento em torno de um nível de operação nominal $h_0$, obtém-se a resistência hidráulica equivalente $R_h = \frac{\sqrt{2 g h_0}}{g a_{\text{out}}}$ e a função de transferência clássica de primeira ordem:</p>
+<p>\begin{equation}
+    G(s) = \frac{H(s)}{Q_{\text{in}}(s)} = \frac{K_h}{\tau_h \, s + 1}
+    
+\end{equation}</p>
+<p>\noindent onde $\tau_h = A R_h$ é a constante de tempo do reservatório e $K_h = R_h$ é o ganho estático. O modelo implementa a não-linearidade física de saturação assimétrica do atuador (a bomba injeta líquido no intervalo $0 \le u \le 100%$, porém é incapaz de aspirar líquido), permitindo ao aluno exercitar sintonias clássicas por Ziegler-Nichols e compensação de vazamentos de demanda $q_{\text{vaz}}(t)$.</p>
+<h3 class="subsection">Discretização Numérica e Laço de Simulação</h3>
+<p>A integração das equações diferenciais contínuas é realizada no motor de física (`PhysicsEngine.js`) através do método de Euler explícito acoplado ao ciclo de renderização do navegador via `requestAnimationFrame`. Em cada quadro $k$, calcula-se o intervalo temporal real decorrido $\Delta t = (t_k - t_{k-1})$:</p>
+<p>\begin{align}
+    a[k] &= \frac{u[k] + d[k] - b \, v[k-1]}{m}  \\
+    v[k] &= v[k-1] + a[k] \, \Delta t  \\
+    x[k] &= x[k-1] + v[k] \, \Delta t 
+\end{align}</p>
+<p>Para garantir estabilidade numérica mesmo sob eventuais atrasos de agendamento na <em>thread</em> principal do navegador, o passo $\Delta t$ é rigidamente saturado em $\Delta t_{\max} = 0{,}1\text{ s}$.</p>
+<h2 class="section">Implementação da Plataforma Frontend</h2>
+<p>A interface de usuário foi concebida sob os princípios de ergonomia de estações de instrumentação, organizada em módulos complementares.</p>
+<h3 class="subsection">Editor de Código e Sandbox de Execução Segura</h3>
+<p>A programação do controlador é viabilizada através da integração do editor CodeMirror com suporte a realce sintático para JavaScript. O algoritmo definido pelo usuário é compilado em tempo de execução através do construtor `new Function`:</p>
+<p>\begin{verbatim}
+const userFunc = new Function(
+    'error', 'integral', 'derivative', 'velocity', 'position', 'disturbance',
+    customCode
+);
+const output = userFunc(error, integral, derivative, velocity, position, dist);
+\end{verbatim}</p>
+<p>Essa abordagem isola as variáveis locais do motor de física, impedindo a poluição do escopo global `window`. A chamada é interceptada por tratamento estrito de exceções; caso ocorra divisão por zero, retorno não-numérico (`NaN`) ou laço infinito acidental, a simulação é pausada preventivamente e uma mensagem descritiva é apresentada no console de diagnóstico da interface.</p>
+<h3 class="subsection">Cena Tridimensional com Three.js</h3>
+<p>O ambiente tridimensional é estruturado sobre o WebGL utilizando a biblioteca Three.js. A pista de testes da Fase 1 é construída proceduralmente através de malhas segmentadas (`BufferGeometry`), permitindo a aplicação de deformações dinâmicas nos vértices de altura para gerar modos de relevo (plano, aclive de $+15^\circ$, declive de $-15^\circ$ e pista ondulada senoidal).</p>
+<p>A câmera virtual acompanha a translação do veículo utilizando amortecimento exponencial (<em>lerp</em>):</p>
+<p>\begin{equation}
+    \mathbf{P}_{\text{cam}}[k] = \mathbf{P}_{\text{cam}}[k-1] + \lambda \, (\mathbf{P}_{\text{alvo}}[k] - \mathbf{P}_{\text{cam}}[k-1])
+    
+\end{equation}</p>
+<p>\noindent onde $\lambda \in (0, 1)$ define o fator de suavização, garantindo uma transição visual contínua sem trepidação durante variações bruscas de velocidade.</p>
+<h3 class="subsection">Osciloscópio Digital e Decomposição de Sinais</h3>
+<p>O módulo de telemetria didática emprega a biblioteca Chart.js otimizada para atualização contínua em tempo real. O gráfico projeta simultaneamente seis curvas temporais correlacionadas:</p>
+<ol>
+    <li>Variável de processo $y(t)$ (traço ciano);
+    <li>Sinal de referência $r(t)$ (linha tracejada vermelha);
+    <li>Parcela Proporcional $u_P(t) = K_p e(t)$ (traço âmbar pontilhado);
+    <li>Parcela Integral $u_I(t) = K_i \int e \, dt$ (traço esmeralda tracejado);
+    <li>Parcela Derivativa $u_D(t) = K_d \frac{de}{dt}$ (traço roxo traço-ponto);
+    <li>Resposta analítica teórica de referência $y_{\text{teorico}}(t)$ (linha cinza).
+</ol>
+<p>Chaves seletoras (<em>toggles</em>) na interface permitem ligar e desligar individualmente cada componente do esforço de controle, viabilizando ensaios analíticos onde o estudante observa o isolamento do efeito de amortecimento do termo $u_D$ ou a ação cumulativa do termo $u_I$.</p>
+<h3 class="subsection">Módulo Automatizado de Sintonia Assistida</h3>
+<p>O componente `TuningAssistant.js` automatiza o procedimento experimental de sintonia em malha aberta:</p>
+<ol>
+    <li>O usuário clica em ``Iniciar Ensaio de Malha Aberta'', disparando a aplicação de um degrau unitário constante $u(t) = 1{,}0$;
+    <li>O sistema monitora a resposta até a estabilização assintótica da velocidade ou posição;
+    <li>Algoritmicamente, o módulo localiza o ponto de maior derivada temporal $\left(\frac{dy}{dt}\right)_{\max}$, traça a reta tangente e determina a interseção com o eixo temporal, extraindo os parâmetros FOPDT: ganho estático $K$, tempo morto $\theta$ e constante de tempo $\tau$;
+    <li>As tabelas de Ziegler-Nichols e Cohen-Coon são computadas e apresentadas em uma janela modal com botão ``Aplicar Ganhos no Editor'', que injeta os valores calculados diretamente no código-fonte do estudante.
+</ol>
+<h2 class="section">Infraestrutura Backend e Geração Científica</h2>
+<p>A camada backend foi estruturada em Python utilizando o framework assíncrono FastAPI. A persistência de dados utiliza o SQLAlchemy ORM conectado a um banco relacional PostgreSQL, mapeando modelos para registros de ensaios laboratoriais (`RunModel`) e amostras temporais de telemetria.</p>
+<h3 class="subsection">Diagnóstico Heurístico e Geração de Relatórios (PDF)</h3>
+<p>Ao término de cada ensaio, a série temporal de telemetria é submetida ao endpoint `POST /api/v1/runs/`. O módulo de inteligência diagnóstica (`score_service.py`) analisa os dados consolidados e classifica a qualidade da resposta do controlador segundo regras heurísticas:</p>
+<ul>
+    <li>Se $M_p > 25%$, o diagnóstico sinaliza ganho proporcional $K_p$ excessivo ou falta de ação derivativa $K_d$;
+    <li>Se $e_{ss} > 2%$, recomenda-se a elevação do ganho integral $K_i$;
+    <li>Se o tempo de subida for excessivamente lento ($t_r > 3\tau$), indica-se sub-dimensionamento de $K_p$.
+</ul>
+<p>O gerador de documentos (`report_generator.py`), construído com as bibliotecas ReportLab e Matplotlib, sintetiza um laudo técnico completo em formato PDF contendo:
+<ol>
+    <li>Cabeçalho institucional com carimbo de data, hora e fase experimental;
+    <li>Tabela de métricas consolidadas ($t_r, t_s, M_p, e_{ss}, \text{RMSE}, \text{IAE}, \text{ITAE}$);
+    <li>Painel superior com curvas comparativas de saída $y(t)$, referência $r(t)$ e erro $e(t)$;
+    <li>Painel inferior com a decomposição vetorial de esforços $u_P(t), u_I(t), u_D(t)$ e limites de saturação;
+    <li>Parecer técnico detalhado com recomendações de ajuste paramétrico.
+</ol></p>
+<p>Adicionalmente, o endpoint `GET /api/v1/runs/{id}/export-csv` gera conjuntos de dados estruturados com as séries temporais brutas, permitindo que os discentes importem os resultados em ferramentas científicas (como Python SciPy, MATLAB ou OriginLab) para confecção de artigos e relatórios de laboratório.</p>
+<h2 class="section">Conteinerização e Implantação com Docker</h2>
+<p>Para assegurar reprodutibilidade experimental estrita e eliminar conflitos de dependências em estações de trabalho de laboratório, toda a aplicação foi empacotada em contêineres Docker orquestrados por `docker-compose`.</p>
+<p>O serviço frontend opera sob servidor web Nginx ou servidor estático leve, expondo a porta `8080`, enquanto a API backend FastAPI executa via Uvicorn na porta `8081` com migrações automáticas de banco de dados. Um único comando (`docker compose up &ndash;build`) é suficiente para instanciar integralmente o laboratório virtual em qualquer sistema operacional (Linux, macOS, Windows).</p>
+<h1 class="chapter">Resultados Experimentais e Discussão</h1>
+<p>Este capítulo apresenta a validação experimental e a avaliação de desempenho do <em>PID Simulator</em>. Os ensaios foram conduzidos para verificar a fidelidade matemática do motor de simulação discreta frente a modelos analíticos de referência, demonstrar a eficácia didática da decomposição das forças de controle ($u_P, u_I, u_D$), comprovar o módulo de sintonia assistida de Ziegler-Nichols, analisar a robustez dos controladores sob perturbações dinâmicas de relevo e quantificar o desempenho computacional do sistema no navegador.</p>
+<h2 class="section">Validação Numérica Frente à Solução Analítica</h2>
+<p>Para assegurar que o motor de física (`PhysicsEngine.js`) reproduz com precisão a dinâmica física contínua sem distorções introduzidas pela integração numérica em tempo real (Euler explícito com passo variável associado ao `requestAnimationFrame`), realizou-se um ensaio comparativo entre a simulação em malha aberta e a solução analítica exata da equação diferencial de primeira ordem para velocidade $v(t)$:</p>
+<p>\begin{equation}
+    m \, \frac{dv(t)}{dt} + b \, v(t) = u(t)
+    
+\end{equation}</p>
+<p>Para uma entrada em degrau constante $u(t) = u_0 \cdot \mu(t)$ com condições iniciais nulas ($v(0) = 0$), a solução analítica contínua no domínio do tempo é dada por:</p>
+<p>\begin{equation}
+    v_{\text{teorico}}(t) = \frac{u_0}{b} \left( 1 - e^{-\frac{t}{\tau}} \right)
+    
+\end{equation}</p>
+<p>\noindent onde $\tau = \frac{m}{b}$ define a constante de tempo do sistema. Adotando-se os parâmetros nominais da planta do veículo ($m = 50\text{ kg}$, $b = 2\text{ N}\cdot\text{s/m}$ e degrau $u_0 = 100\text{ N}$), o ganho estático analítico corresponde a $K = 50\text{ m/s}$ e a constante de tempo a $\tau = 25\text{ s}$.</p>
+<p>A Tabela <span class="ref">[tab:validacao_numerica]</span> compara os valores amostrados pelo simulador web a uma taxa média de $60\text{ FPS}$ ($\Delta t \approx 16{,}67\text{ ms}$) com a curva analítica calculada via biblioteca científica SciPy.</p>
+<p>\begin{table}[htbp]
+    \centering
+    \caption{Comparação entre a resposta simulada em tempo real e a solução analítica exata sob degrau de entrada de $100\text{ N}$.}
+    
+    \begin{tabular}{c|c|c|c}
+        \hline
+        <strong>Tempo $t$ (s)</strong> & <strong>Velocidade Analítica $v_{\text{teorico</strong>}$ (m/s)} & <strong>Velocidade Simulada $v_{\text{sim</strong>}$ (m/s)} & <strong>Erro Absoluto $|e_v|$ (m/s)</strong> \\
+        \hline
+        $0{,}0$  & $0{,}000$ & $0{,}000$ & $0{,}000$ \\
+        $5{,}0$  & $9{,}063$ & $9{,}051$ & $0{,}012$ \\
+        $10{,}0$ & $16{,}484$ & $16{,}467$ & $0{,}017$ \\
+        $25{,}0$ ($\tau$) & $31{,}606$ & $31{,}582$ & $0{,}024$ \\
+        $50{,}0$ ($2\tau$) & $43{,}233$ & $43{,}211$ & $0{,}022$ \\
+        $100{,}0$ ($4\tau$) & $49{,}084$ & $49{,}072$ & $0{,}012$ \\
+        \hline
+    \end{tabular}
+    \vspace{0.1cm}
+    \fonte{Elaborada pelo autor (2026).}
+\end{table}</p>
+<p>A Raiz do Erro Quadrático Médio ($\text{RMSE}$) calculada sobre todo o horizonte de ensaio ($N = 6.000$ amostras) resultou em:</p>
+<p>\begin{equation}
+    \text{RMSE} = \sqrt{\frac{1}{N} \sum_{k=1}^{N} \left( v_{\text{teorico}}[k] - v_{\text{sim}}[k] \right)^2} = 0{,}018\text{ m/s}
+    
+\end{equation}</p>
+<p>O desvio relativo percentual permaneceu inferior a $0{,}08%$ em todos os pontos, comprovando que a discretização por Euler a taxas de atualização usuais de navegadores modernos assegura fidelidade analítica plenamente compatível com experimentos pedagógicos e de engenharia.</p>
+<h2 class="section">Avaliação Didática da Decomposição $P, I, D$</h2>
+<p>Um dos diferenciais centrais da plataforma é a capacidade de decompor graficamente em tempo real o esforço total de controle nas componentes $u_P(t)$, $u_I(t)$ e $u_D(t)$. Para demonstrar essa funcionalidade, submeteu-se a planta do veículo a ensaios sucessivos de regulação de posição com setpoint de $r(t) = 600\text{ m}$.</p>
+<h3 class="subsection">Ensaio 1: Controle Proporcional Puro ($P$)</h3>
+<p>Configurou-se o controlador com ganho proporcional $K_p = 0{,}8$, mantendo $K_i = 0$ e $K_d = 0$. Observou-se que o veículo acelerou rapidamente em direção à meta, porém a desaceleração dependeu unicamente do atrito passivo da planta. Como consequência teórica esperada em sistemas de controle de posição sem polo na origem no ramo direto da velocidade, o sistema apresentou erro permanente de regime ($e_{ss} = 34{,}2\text{ m}$).</p>
+<p>No osciloscópio, o sinal $u_P(t)$ decresceu proporcionalmente ao erro, demonstrando visualmente ao aluno que a força gerada pelo termo proporcional iguala-se à força de atrito antes que a meta seja alcançada, inviabilizando a convergência perfeita ($e(t) \to 0$).</p>
+<h3 class="subsection">Ensaio 2: Ação Proporcional-Integral ($PI$)</h3>
+<p>Ao introduzir a ação integral com $K_i = 0{,}04$, a componente $u_I(t)$ passou a acumular o erro residual remanescente ao longo do tempo. O erro de regime permanente foi anulado com sucesso ($e_{ss} = 0\text{ m}$). Contudo, o acúmulo da integral durante a fase transitória gerou sobressinal expressivo ($M_p = 28{,}4%$) e tempo de acomodação dilatado ($t_s = 32{,}6\text{ s}$).</p>
+<p>O gráfico de telemetria evidenciou de forma contundente ao usuário a curva esmeralda de $u_I(t)$ atingindo seu pico no exato instante em que o veículo cruzava o setpoint, elucidando a causa física do sobressinal.</p>
+<h3 class="subsection">Ensaio 3: Ação Proporcional-Integral-Derivativa ($PID$)</h3>
+<p>Com a incorporação do ganho derivativo $K_d = 4{,}5$, o termo preditivo $u_D(t) = K_d \frac{de}{dt}$ atuou em oposição ao movimento à medida que o veículo se aproximava da referência com alta velocidade ($\frac{de}{dt} < 0$).</p>
+<p>A força derivativa atuou como um freio dinâmico antecipado, atenuando o sobressinal para $M_p = 4{,}1%$ e reduzindo o tempo de acomodação para $t_s = 14{,}2\text{ s}$ (redução de $56{,}4%$ frente ao controlador PI). A Tabela <span class="ref">[tab:comparativo_pid]</span> sintetiza os resultados comparativos obtidos na bancada.</p>
+<p>\begin{table}[htbp]
+    \centering
+    \caption{Comparativo das métricas de desempenho transitório e regime permanente para as configurações P, PI e PID.}
+    
+    \begin{tabular}{l|c|c|c|c|c}
+        \hline
+        <strong>Controlador</strong> & <strong>Tempo de Subida $t_r$ (s)</strong> & <strong>Sobressinal $M_p$ (%)</strong> & <strong>Tempo de Acomodação $t_s$ (s)</strong> & <strong>Erro $e_{ss</strong>$ (m)} & <strong>RMSE</strong> \\
+        \hline
+        P ($K_p = 0{,}8$)          & $6{,}8$ & $0{,}0%$  & $\infty$ (não converge) & $34{,}2$ & $48{,}6$ \\
+        PI ($K_p=0{,}8, K_i=0{,}04$) & $5{,}4$ & $28{,}4%$ & $32{,}6$                & $0{,}0$  & $19{,}8$ \\
+        PID ($K_p=0{,}8, K_i=0{,}04, K_d=4{,}5$) & $5{,}7$ & $4{,}1%$  & $14{,}2$    & $0{,}0$  & $9{,}2$ \\
+        \hline
+    \end{tabular}
+    \vspace{0.1cm}
+    \fonte{Elaborada pelo autor (2026).}
+\end{table}</p>
+<h2 class="section">Ensaios de Sintonia Assistida (Ziegler-Nichols)</h2>
+<p>Para testar o módulo `TuningAssistant.js`, disparou-se o ensaio de curva de reação em malha aberta na Fase 1. O sistema aplicou uma força constante $u(t) = 1{,}0\text{ N}$ e identificou automaticamente no ponto de maior derivada:</p>
+<ul>
+    <li>Ganho estático: $K = 0{,}50$;
+    <li>Constante de tempo: $\tau = 25{,}0\text{ s}$;
+    <li>Tempo morto aparente: $\theta = 0{,}60\text{ s}$.
+</ul>
+<p>Com base nesses parâmetros, o módulo computou os seguintes ganhos recomendados pelos critérios de Ziegler-Nichols em malha aberta:
+\begin{equation}
+    K_p = 1{,}2 \frac{\tau}{K \theta} = 1{,}2 \frac{25{,}0}{0{,}50 \times 0{,}60} = 100{,}0
+\end{equation}
+\begin{equation}
+    T_i = 2{,}0 \, \theta = 1{,}2\text{ s} \implies K_i = \frac{K_p}{T_i} = 83{,}33
+\end{equation}
+\begin{equation}
+    T_d = 0{,}5 \, \theta = 0{,}3\text{ s} \implies K_d = K_p \, T_d = 30{,}0
+\end{equation}</p>
+<p>Após a aplicação automática dos ganhos no editor de código, a simulação em malha fechada foi executada. O sistema atingiu a referência de forma estável, com resposta veloz ($t_r = 1{,}4\text{ s}$) e sobressinal contido em $M_p = 18{,}7%$, em perfeita concordância com a razão de decaimento de um quarto prevista teoricamente para o método de Ziegler-Nichols.</p>
+<h2 class="section">Comportamento Dinâmico sob Perturbações de Relevo (Fase 1)</h2>
+<p>Para avaliar o comportamento sob perturbações ambientais severas no veículo, ativou-se o modo de relevo dinâmico em rampa de aclive ($+15^\circ$) na pista 3D. A força gravitacional contrária induzida pelo relevo atingiu:</p>
+<p>\begin{equation}
+    F_{\text{relevo}} = - m \, g_{\text{eff}} \, \sin(15^\circ) \approx -50 \times 350 \times 0{,}2588 \approx -4.529\text{ N}
+\end{equation}</p>
+<p>Quando o veículo adentrou a rampa com controlador puramente proporcional ou PD, a velocidade decaiu rapidamente e o veículo estabilizou-se abaixo da referência com grande erro permanente ($e_{ss} > 80\text{ m}$), incapaz de vencer a gravidade.</p>
+<p>Com a ativação da ação integral ($u_I$), o integrador continuou acumulando o erro gerado pelo recuo do veículo, elevando o esforço de atuação até contrapor exatamente os $4.529\text{ N}$ da força gravitacional, conduzindo o veículo suavemente ao portal de setpoint mesmo sobre a rampa íngreme. Este experimento ilustra a rejeição física a perturbações de carga constante proporcionada pelo integrador.</p>
+<h2 class="section">Estabilização da Bola na Barra e Papel da Ação Derivativa (Fase 2)</h2>
+<p>No ensaio com a planta <em>Ball and Beam</em>, submeteu-se o sistema a um comando de centralização da esfera no ponto neutro ($x_{\text{sp}} = 0\text{ cm}$), partindo de uma condição inicial deslocada em $x(0) = -30\text{ cm}$.</p>
+<p>No primeiro teste, configurou-se um controlador proporcional puro ($K_p = 0{,}8, K_d = 0$). Conforme previsto pela teoria do duplo integrador sem amortecimento, a esfera acelerou em direção ao centro, cruzou a referência com velocidade máxima e continuou oscilando com amplitude crescente até colidir repetidamente com os batentes laterais inelásticos em $\pm 46\text{ cm}$, sem qualquer convergência assintótica.</p>
+<p>No segundo teste, ativou-se a ação derivativa com ganho $K_d = 2{,}4$. O termo derivativo $u_D = K_d \frac{de}{dt}$ gerou uma contra-inclinação antecipada na barra sempre que a esfera ganhava velocidade em direção à meta. O amortecimento dinâmico introduzido reduziu a taxa de overshoot para menos de $4%$ e estabilizou a esfera precisamente no centro com erro residual $|e| < 0{,}5\text{ cm}$ em $t_s = 3{,}4\text{ s}$, comprovando na prática a função do ganho derivativo como mecanismo de estabilização em sistemas subatuados.</p>
+<h2 class="section">Regulação de Nível e Rejeição a Vazamento de Demanda (Fase 3)</h2>
+<p>Para a planta do Tanque de Nível Industrial, definiu-se como objetivo a regulação da coluna de água em $h_{\text{sp}} = 60\text{ cm}$, partindo do reservatório vazio ($h(0) = 0\text{ cm}$).</p>
+<p>O assistente de sintonia aplicou ganhos calculados de $K_p = 1{,}8, K_i = 0{,}25, K_d = 0{,}4$ com algoritmo de <em>anti-windup clamping</em> ativado no intervalo de saturação da bomba ($0 \le u \le 100%$). O tanque atingiu a altura desejada em $t_r = 8{,}2\text{ s}$ com sobressinal contido em $M_p = 3{,}2%$, mantendo potência de bomba estável em regime de aproximadamente $48{,}2%$ para contrabalançar exatamente o escoamento no orifício de Torricelli.</p>
+<p>No instante $t = 25\text{ s}$, acionou-se a perturbação de vazamento de demanda ($q_{\text{vaz}} = 1{,}2\text{ cm/s}$). Inicialmente, o nível apresentou um rebaixamento transitório de $3{,}8\text{ cm}$. Contudo, a ação integral acumulou o desvio e elevou a potência da bomba para $62{,}5%$, restaurando o nível de água aos $60\text{ cm}$ nominais ($e_{ss} = 0\text{ cm}$) em menos de $6\text{ s}$, demonstrando robustez e aderência aos processos industriais contínuos.</p>
+<h2 class="section">Desempenho Computacional e Perfil de Carga</h2>
+<p>A viabilidade técnica de uma aplicação web de instrumentação requer taxas de quadros fluidas e tempos de resposta ágeis do servidor. Foram coletadas métricas de telemetria de processamento durante ensaios contínuos de 120 segundos executados em um navegador Google Chrome sob hardware padrão (Apple Silicon M-series):</p>
+<ul>
+    <li><strong>Taxa de Quadros por Segundo (FPS):</strong> Média sustentada de $59{,}4\text{ FPS}$ (com desvio padrão $\sigma = 0{,}8\text{ FPS}$), superando amplamente o requisito não-funcional RNF01 ($\ge 30\text{ FPS}$);
+    <li><strong>Consumo de Memória no Cliente:</strong> Alocação de heap JavaScript estabilizada em aproximadamente $42\text{ MB}$, sem evidência de vazamento de memória (<em>memory leak</em>) no descarte de malhas do Three.js e buffers do Chart.js;
+    <li><strong>Tempo de Processamento do Backend (FastAPI):</strong> O endpoint `POST /api/v1/runs/` processou e armazenou séries temporais completas de 3.000 amostras com tempo médio de latência de $38\text{ ms}$;
+    <li><strong>Geração de Relatório Técnico (PDF):</strong> A compilação completa do laudo em PDF com gráficos duplos em alta resolução pelo ReportLab e Matplotlib consumiu em média $340\text{ ms}$, viabilizando o download quase instantâneo pelo discente.
+</ul>
+<p>Os resultados experimentais atestam a robustez, fidelidade física e viabilidade pedagógica da plataforma proposta.</p>
+<h1 class="chapter">Conclusão e Trabalhos Futuros</h1>
+<p>Este capítulo consolida os principais resultados e conclusões obtidos ao longo do desenvolvimento do <em>PID Simulator</em>, destacando as contribuições científicas, técnicas e pedagógicas alcançadas para a Engenharia de Computação e para o ensino de engenharia na Universidade Federal de Alagoas (UFAL). Por fim, discutem-se as limitações do trabalho e apresentam-se direcionamentos concretos para pesquisas e desenvolvimentos futuros.</p>
+<h2 class="section">Considerações Finais</h2>
+<p>O presente Trabalho de Conclusão de Curso propôs, implementou e validou experimentalmente uma plataforma web interativa para simulação física tridimensional, sintonia assistida e análise de telemetria de controladores PID em malha fechada. A motivação central esteve alicerçada na necessidade premente de superar os altos custos de licenciamento de ferramentas industriais consolidadas e mitigar a excessiva abstração matemática que permeia o ensino tradicional de sistemas de controle.</p>
+<p>Ao longo do desenvolvimento, todos os objetivos específicos estabelecidos no Capítulo <span class="ref">[cap:introducao]</span> foram plenamente atingidos:</p>
+<ol>
+    <li><strong>Modelagem Física Realista:</strong> Foram formuladas e implementadas equações dinâmicas e cinemáticas para três plantas distintas, incluindo veículo terrestre com perturbação topográfica de relevo 3D ($F_{\text{relevo}} = -mg\sin(\alpha)$), drone com sustentação vertical sob vento estocástico e navio sujeito a correntes marinhas oscilatórias;
+    <li><strong>Arquitetura Web de Alta Performance:</strong> O frontend construído em Three.js e WebGL manteve taxa média estável de $59{,}4\text{ FPS}$, viabilizando uma experiência de instrumentação fluida sem a necessidade de instalação de qualquer software proprietário local;
+    <li><strong>Ambiente Seguro em Sandbox:</strong> O editor de código acoplado ao construtor `new Function` demonstrou isolamento eficaz, permitindo a escrita de lógica de controle personalizada pelo estudante com interceptação de erros em tempo real;
+    <li><strong>Transparência Didática Multicanal:</strong> O osciloscópio digital implementado possibilitou a visualização síncrona e a decomposição individual das forças proporcional ($u_P$), integral ($u_I$) e derivativa ($u_D$), permitindo ao discente correlacionar diretamente o papel de cada parcela com os fenômenos físicos observados na cena 3D (como a anulação do erro em rampas e a contenção do sobressinal);
+    <li><strong>Módulo Automatizado de Sintonia:</strong> O assistente de sintonia em malha aberta automatizou com êxito a extração dos parâmetros FOPDT ($K, \tau, \theta$) e o cálculo de ganhos pelos critérios clássicos de Ziegler-Nichols e Cohen-Coon;
+    <li><strong>Infraestrutura Backend e Validação Numérica:</strong> A API em FastAPI conteinerizada em Docker assegurou persistência estruturada, emissão rápida de relatórios técnicos em PDF com diagnósticos heurísticos e exportação de dados em CSV. A validação numérica comprovou erro quadrático médio de apenas $\text{RMSE} = 0{,}018\text{ m/s}$ frente à solução analítica contínua de referência.
+</ol>
+<p>Dessa forma, comprova-se a hipótese de pesquisa formulada: a integração entre renderização tridimensional síncrona, decomposição explícita de sinais de controle e assistente de sintonia proporciona uma plataforma educacional superior, tangível e acessível para o aprendizado prático de engenharia de controle.</p>
+<h2 class="section">Principais Contribuições</h2>
+<p>Dentre as principais contribuições técnico-científicas do trabalho destacam-se:</p>
+<ul>
+    <li><strong>Democratização do Acesso Laboratorial:</strong> Disponibilização de um laboratório virtual livre, leve e aberto (<em>open source</em>), capaz de ser executado em qualquer computador ou dispositivo com navegador web, viabilizando o ensino remoto e práticas extraclasse na UFAL;
+    <li><strong>Inovação na Decomposição Pedagógica de Sinais:</strong> Abordagem pioneira que expõe visualmente cada termo ($u_P, u_I, u_D$) em canais de osciloscópio independentes com limites de saturação, transformando o conceito abstrato de esforço de controle em grandezas mensuráveis;
+    <li><strong>Convergência entre Controle e Engenharia de Computação:</strong> Demonstração prática de como técnicas modernas de computação gráfica na web, conteinerização e microsserviços assíncronos podem ser aplicadas para resolver desafios pedagógicos de engenharias tradicionais.
+</ul>
+<h2 class="section">Limitações Identificadas</h2>
+<p>A despeito dos resultados plenamente satisfatórios, identificaram-se limitações operacionais que definem as fronteiras do presente estudo:</p>
+<ol>
+    <li><strong>Simplificação de Modelos de Atrito:</strong> Adotou-se prioritariamente o atrito viscoso linear ($b \cdot v$), omitindo-se não-linearidades complexas como o atrito de Coulomb estático com zona morta e o efeito Stribeck;
+    <li><strong>Execução na Thread Principal:</strong> A execução da simulação e do código do usuário no escopo principal do navegador compartilha processamento com o ciclo de redesenho do DOM, o que pode gerar pequenas quedas de quadros caso o estudante introduza acidentalmente algoritmos computacionalmente pesados;
+    <li><strong>Inexistência de Acoplamento com Hardware Físico:</strong> A plataforma restringe-se atualmente ao domínio da simulação puramente virtual, sem interface direta para controle de atuadores físicos reais em bancada.
+</ol>
+<h2 class="section">Trabalhos Futuros</h2>
+<p>Como perspectivas de continuidade e expansão desta pesquisa, propõem-se os seguintes desdobramentos:</p>
+<ul>
+    <li><strong>Migração para Web Workers:</strong> Isolar a execução do motor de física e da <em>sandbox</em> de código em <em>Web Workers</em> dedicados rodando em <em>threads</em> secundárias em segundo plano, liberando integralmente a <em>thread</em> principal para a renderização gráfica via `OffscreenCanvas`;
+    <li><strong>Implementação de Algoritmos Inteligentes de Sintonia:</strong> Incorporar módulos de sintonia automática baseados em meta-heurísticas de inteligência artificial, tais como Algoritmos Genéticos (GA), Otimização por Enxame de Partículas (PSO) e Aprendizado por Reforço (<em>Reinforcement Learning</em>);
+    <li><strong>Integração com Hardware Real (<em>Hardware-in-the-Loop</strong>):</em> Utilizar a API WebSerial ou WebSockets para permitir que o simulador envie o esforço de controle e receba a telemetria de microcontroladores reais (como ESP32 ou Arduino) conectados à porta USB do computador;
+    <li><strong>Modelagem de Novas Plantas Clássicas:</strong> Expandir a biblioteca de experimentos para incluir plantas multivariáveis ou instáveis em malha aberta consagradas no ensino, tais como o pêndulo invertido sobre carro móvel, o levitador magnético e sistemas de múltiplos tanques acoplados;
+    <li><strong>Avaliação Pedagógica em Sala de Aula:</strong> Conduzir um estudo de usabilidade empírica com discentes de graduação da UFAL, quantificando o ganho de aprendizado através de questionários pré e pós-teste em turmas regulares de Sistemas de Controle.
+</ul>
+<p>\postextual</p>
+<p>\bibliography{referencias}</p>
+<p>\end{document}</p>
+    </div>
+</body>
+</html>

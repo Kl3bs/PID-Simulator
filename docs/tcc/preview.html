@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pré-visualização LaTeX</title>
+    <!-- MathJax para formulas matematicas -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background-color: #f7f9fc;
+            color: #1e293b;
+            line-height: 1.8;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 60px 80px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+        }
+        .badge {
+            display: inline-block;
+            background: #e2e8f0;
+            color: #475569;
+            font-size: 0.75rem;
+            font-family: -apple-system, sans-serif;
+            padding: 4px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        h1.chapter {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 2.2rem;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-bottom: 30px;
+        }
+        h2.section {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 1.5rem;
+            color: #1e293b;
+            margin-top: 36px;
+            margin-bottom: 16px;
+        }
+        h3.subsection {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 1.2rem;
+            color: #334155;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+        p {
+            text-align: justify;
+            text-indent: 2.5em;
+            margin-bottom: 1.2em;
+            font-size: 1.1rem;
+        }
+        blockquote {
+            margin: 24px 0 24px 40px;
+            padding: 12px 20px;
+            border-left: 4px solid #3b82f6;
+            background: #f8fafc;
+            font-style: italic;
+            color: #334155;
+            font-size: 1.05rem;
+        }
+        ul, ol {
+            margin: 20px 0 20px 30px;
+            padding-left: 20px;
+            font-size: 1.05rem;
+        }
+        li {
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        .citation {
+            color: #2563eb;
+            font-weight: 500;
+        }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">Visualizador Python .tex &bull; TCC Engenharia UFAL</span>
+        <h1 class="chapter">Introdução</h1>
+<h2 class="section">Contextualização e Motivação</h2>
+<p>Os sistemas de controle em malha fechada constituem a base operacional de grande parte da infraestrutura tecnológica e industrial moderna. Desde processos químicos contínuos e plantas de geração de energia até sistemas automotivos avançados e veículos aéreos não tripulados, a capacidade de manter variáveis de processo reguladas em torno de referências pré-determinadas, mesmo sob a atuação de perturbações externas e incertezas paramétricas, é indispensável para garantir eficiência, segurança e viabilidade operacional <span class="citation">[ogata2010, dorf2017]</span>.</p>
+<p>Nesse cenário, o algoritmo Proporcional-Integral-Derivativo (PID) consolida-se historicamente como a estratégia de controle por realimentação mais empregada em aplicações industriais, respondendo por mais de 90% das malhas de controle ativas no setor produtivo <span class="citation">[astrom2006, nise2020]</span>. A ampla aceitação do controlador PID decorre de sua formulação conceitualmente intuitiva &mdash; baseada no tratamento do erro passado (integral), presente (proporcional) e futuro estimado (derivativo) &mdash; aliada à sua robustez estrutural e à independência de modelos matemáticos complexos de ordem elevada para sua implementação preliminar.</p>
+<p>Não obstante sua ubiquidade e relevância prática, o ensino e a aprendizagem de sistemas de controle na formação de engenheiros &mdash; particularmente em cursos de Engenharia de Computação &mdash; enfrentam desafios pedagógicos expressivos. Tradicionalmente, as ementas curriculares enfatizam o domínio analítico no domínio da frequência e no plano complexo (Transformadas de Laplace e Fourier, Diagramas de Bode e Nyquist, Lugar Geométrico das Raízes). Embora esse embasamento formal seja estritamente necessário, observa-se com frequência um distanciamento substancial entre a representação matemática abstrata e a dinâmica física concreta do sistema real <span class="citation">[dormido2002]</span>.</p>
+<p>Muitas vezes, o estudante manipula funções de transferência sem compreender visualmente como o ajuste do ganho derivativo $K_d$ amortece o movimento de um veículo, de que forma o ganho integral $K_i$ atua para vencer o atrito estático em um aclive, ou quais são as consequências severas da saturação do atuador associada ao fenômeno de <em>integrator windup</em>. Essa lacuna epistemológica entre a teoria e a intuição física contribui para índices expressivos de desmotivação e evasão em disciplinas fundamentais da área de automação e controle.</p>
+<h2 class="section">Problema de Pesquisa</h2>
+<p>A consolidação prática dos conceitos de engenharia de controle tradicionalmente depende de duas vias: a experimentação em bancadas didáticas físicas ou o uso de simuladores computacionais. Entretanto, ambas as abordagens apresentam restrições relevantes no contexto universitário contemporâneo:</p>
+<ol>
+    <li><strong>Custo e Manutenção de Bancadas Físicas:</strong> Laboratórios físicos com servomecanismos, plantas de nível ou túneis de vento exigem investimentos financeiros expressivos em aquisição, calibração periódica e manutenção de atuadores e sensores, inviabilizando a disponibilização de estações individuais para turmas numerosas;
+    <li><strong>Barreiras de Licenciamento de Softwares Proprietários:</strong> Ferramentas industriais consagradas, a exemplo do MATLAB/Simulink e do LabVIEW, impõem custos proibitivos de licenciamento para discentes, exigem computadores com capacidade expressiva de processamento e demandam uma curva de aprendizado substancial apenas para a operação do ambiente de software;
+    <li><strong>Limitações de Simuladores Acadêmicos Tradicionais:</strong> A maioria das alternativas computacionais gratuitas disponíveis na web limita-se a gráficos bidimensionais estáticos e controles deslizantes parametrizados, sem permitir que o estudante programe diretamente o código do algoritmo em malha fechada, nem que observe a resposta física da planta em uma cena tridimensional realista com perturbações dinâmicas de relevo e atrito.
+</ol>
+<p>Diante deste panorama, formula-se o problema de pesquisa que orienta o presente trabalho:</p>
+<blockquote>
+<em>Como conceber e implementar uma arquitetura computacional baseada na web que combine simulação numérica em tempo real, computação gráfica tridimensional e decomposição analítica do esforço de controle para mitigar a abstração conceitual e os altos custos de infraestrutura no ensino e na parametrização de controladores PID?</em>
+</blockquote>
+<h2 class="section">Hipótese de Pesquisa</h2>
+<p>A hipótese científica deste trabalho estabelece que a disponibilização de uma plataforma web interativa, dotada de renderização física tridimensional em tempo real sincronizada a um osciloscópio digital com decomposição explícita das forças proporcional ($u_P$), integral ($u_I$) e derivativa ($u_D$), acoplada a um módulo assistido de sintonia em malha aberta (Ziegler-Nichols), proporciona uma assimilação conceitual superior e mais intuitiva da dinâmica transitória e de regime permanente do que métodos restritos ao equacionamento puramente analítico ou a simuladores bidimensionais estáticos.</p>
+<h2 class="section">Objetivos</h2>
+<h3 class="subsection">Objetivo Geral</h3>
+<p>Projetar, implementar e validar uma plataforma web interativa para simulação e sintonia de controladores PID em malha fechada, integrando renderização física tridimensional em tempo real, análise de telemetria didática e geração automatizada de relatórios técnicos de desempenho para apoio ao ensino de engenharia.</p>
+<h3 class="subsection">Objetivos Específicos</h3>
+<p>Para viabilizar a consecução do objetivo geral, estabelecem-se as seguintes metas específicas de desenvolvimento e pesquisa:</p>
+<ol>
+    <li><strong>Modelar matematicamente</strong> a dinâmica física e cinemática de plantas representativas (veículo terrestre sob atrito de rolamento, arrasto aerodinâmico e componentes gravitacionais em relevos inclinados com $\alpha(x)$ variável);
+    <li><strong>Desenvolver a arquitetura computacional frontend</strong> em WebGL/Three.js e JavaScript vanilla, incorporando um editor de código isolado em <em>sandbox</em> capaz de executar algoritmos do usuário com determinismo temporal a taxas de atualização fluidas ($\ge 30\text{ FPS}$);
+    <li><strong>Implementar a instrumentação e osciloscópio digital</strong> multicanal com capacidade de monitoramento síncrono da variável de processo $y(t)$, setpoint $r(t)$, decomposição individual das parcelas de controle ($u_P, u_I, u_D$) e sinalização de saturação do atuador;
+    <li><strong>Construir um assistente automatizado de sintonia clássica</strong> em malha aberta, aplicando o método da reta tangente à curva de reação para identificação de modelos FOPDT ($K, \tau, \theta$) e cálculo de parâmetros de sintonia baseados nos critérios de Ziegler-Nichols;
+    <li><strong>Projetar a infraestrutura de backend</strong> em Python (FastAPI) conteinerizada via Docker, provendo serviços de persistência de ensaios, exportação de conjuntos de dados em formato CSV e emissão automática de relatórios técnicos em PDF com diagnósticos de controle;
+    <li><strong>Validar experimentalmente</strong> a precisão numérica da simulação frente a soluções analíticas exatas calculadas por métodos numéricos consolidados, quantificando métricas de resposta ao degrau ($t_r, t_s, M_p, e_{ss}$) e o erro médio quadrático ($\text{RMSE}$).
+</ol>
+<h2 class="section">Justificativa e Relevância</h2>
+<p>A realização deste trabalho justifica-se sob quatro perspectivas complementares:</p>
+<ul>
+    <li><strong>Relevância Pedagógica:</strong> O ambiente oferece feedback visual imediato, permitindo que o estudante correlacione causa e efeito em tempo real. A possibilidade de visualizar as forças do atuador de forma decomposta e de presenciar visualmente o veículo respondendo a aclives e declives promove a fixação dos conceitos fundamentais de estabilidade e transitório;
+    <li><strong>Acessibilidade e Inclusão Tecnológica:</strong> Por ser executada integralmente no navegador web (<em>browser-based</em>) e distribuída sob arquitetura aberta, a ferramenta independe de estações de trabalho de alto custo ou da aquisição de licenças proprietárias, democratizando o acesso a laboratórios práticos na Universidade Federal de Alagoas (UFAL) e em outras instituições de ensino;
+    <li><strong>Desafio Técnico em Engenharia de Computação:</strong> O desenvolvimento congrega áreas essenciais do núcleo profissional do curso, abrangendo engenharia de software distribuída (FastAPI, Docker), computação gráfica e matemática aplicada (Three.js, WebGL), integração numérica determinística e segurança computacional em ambientes de execução de código não confiável (<em>client-side sandbox</em>);
+    <li><strong>Apoio à Pesquisa e Experimentação Científica:</strong> A exportação de dados estruturados em CSV e a emissão de relatórios automatizados conferem rigor científico aos ensaios, permitindo que a plataforma seja utilizada não apenas no ensino de graduação, mas também como bancada preliminar de testes para prototipagem de algoritmos de controle.
+</ul>
+<h2 class="section">Organização do Trabalho</h2>
+<p>A presente monografia encontra-se estruturada em cinco capítulos, distribuídos conforme o roteiro a seguir:</p>
+<ul>
+    <li>O <strong>Capítulo <span class="ref">[cap:introducao</strong> (Introdução)]</span> contextualiza o tema, delimita o problema de pesquisa, explicita as hipóteses e estabelece os objetivos e a relevância do estudo;
+    <li>O <strong>Capítulo 2 (Fundamentação Teórica e Trabalhos Correlatos)</strong> revisita os conceitos de controle clássico por realimentação PID, métricas de desempenho transitório, fenômenos de saturação, métodos de identificação de sistemas (FOPDT e Ziegler-Nichols), além de avaliar o estado da arte dos laboratórios virtuais de ensino;
+    <li>O <strong>Capítulo 3 (Desenvolvimento e Arquitetura do Sistema)</strong> expõe a metodologia do projeto, a modelagem física e matemática das plantas, a arquitetura de software (frontend e backend), a concepção do osciloscópio multicanal, o módulo de sintonia assistida e o ambiente de conteinerização;
+    <li>O <strong>Capítulo 4 (Resultados Experimentais e Discussão)</strong> apresenta os ensaios de validação numérica frente a curvas analíticas teóricas, a análise de desempenho do algoritmo PID sob perturbações de relevo, a eficácia do módulo de sintonia e o perfil de desempenho computacional da aplicação;
+    <li>O <strong>Capítulo 5 (Conclusão e Trabalhos Futuros)</strong> sintetiza as principais contribuições alcançadas, relata as limitações identificadas e propõe direcionamentos para trabalhos subsequentes.
+</ul>
+    </div>
+</body>
+</html>

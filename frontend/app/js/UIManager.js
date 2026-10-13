@@ -4,11 +4,12 @@
     Suporta múltiplas fases com labels dinâmicas e painel de perturbação.
 */
 
-// Detecta se está rodando localmente ou em produção (Render)
-// TODO: Substitua 'sua-api.onrender.com' pelo link final do seu Web Service no Render
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? 'http://localhost:8081' 
-    : 'https://sketch-1-backend.onrender.com';
+// Detecta se está rodando localmente ou em produção
+const API_BASE_URL =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:8081"
+    : "https://sketch-1-backend.onrender.com";
 
 window.UIManager = {
   init: function () {
@@ -31,26 +32,48 @@ window.UIManager = {
       });
     }
 
-    // Troca de abas
+    // Troca de abas e sincronização com icon-rail
+    const selectTab = (tabName) => {
+      if (!tabName) return;
+      document
+        .querySelectorAll(".tab-btn")
+        .forEach((b) => b.classList.toggle("active", b.dataset.tab === tabName));
+      document
+        .querySelectorAll(".icon-rail-btn[data-tab]")
+        .forEach((b) => b.classList.toggle("active", b.dataset.tab === tabName));
+      document
+        .querySelectorAll(".tab-content")
+        .forEach((c) => c.classList.remove("active"));
+      const targetEl = document.getElementById(tabName);
+      if (targetEl) targetEl.classList.add("active");
+      if (
+        tabName === "chart" &&
+        window.ChartAnalytics &&
+        window.ChartAnalytics.chart
+      ) {
+        setTimeout(() => window.ChartAnalytics.chart.resize(), 100);
+      }
+    };
+
     document.querySelectorAll(".tab-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const tabName = btn.dataset.tab;
-        document
-          .querySelectorAll(".tab-btn")
-          .forEach((b) => b.classList.remove("active"));
-        document
-          .querySelectorAll(".tab-content")
-          .forEach((c) => c.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById(tabName).classList.add("active");
-        if (
-          tabName === "chart" &&
-          window.ChartAnalytics &&
-          window.ChartAnalytics.chart
-        ) {
-          setTimeout(() => window.ChartAnalytics.chart.resize(), 100);
-        }
-      });
+      btn.addEventListener("click", () => selectTab(btn.dataset.tab));
+    });
+
+    document.querySelectorAll(".icon-rail-btn[data-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => selectTab(btn.dataset.tab));
+    });
+
+    document.getElementById("rail-btn-ranking")?.addEventListener("click", () => {
+      selectTab("metrics");
+    });
+    document.getElementById("rail-btn-learn")?.addEventListener("click", () => {
+      document.getElementById("btn-open-tuning")?.click();
+    });
+    document.getElementById("rail-btn-settings")?.addEventListener("click", () => {
+      document.getElementById("btn-open-tuning")?.click();
+    });
+    document.getElementById("rail-btn-help")?.addEventListener("click", () => {
+      this.showOnboarding();
     });
 
     // Botão Simular / Pausa
@@ -61,21 +84,23 @@ window.UIManager = {
         window.SIM_STATE.lastError =
           window.SIM_STATE.setPoint - window.SIM_STATE.position;
         this.setPlayButtonState(true);
-        PhysicsEngine.animationId = requestAnimationFrame(PhysicsEngine.loop);
+        if (window.PhysicsEngine) {
+          window.PhysicsEngine.animationId = requestAnimationFrame(window.PhysicsEngine.loop);
+        }
       } else {
         window.SIM_STATE.isRunning = false;
         this.setPlayButtonState(false);
-        cancelAnimationFrame(PhysicsEngine.animationId);
+        cancelAnimationFrame(window.PhysicsEngine?.animationId);
       }
     });
 
     // Botão Reset
     document.getElementById("reset-btn").addEventListener("click", () => {
       window.SIM_STATE.isRunning = false;
-      cancelAnimationFrame(PhysicsEngine.animationId);
+      cancelAnimationFrame(window.PhysicsEngine?.animationId);
       this.setPlayButtonState(false);
 
-      PhysicsEngine.reset();
+      window.PhysicsEngine?.reset();
 
       // Reset da cena ativa
       const activeScene = window.ActiveScene;
@@ -109,11 +134,15 @@ window.UIManager = {
     const exportBtn = document.getElementById("export-csv-btn");
     if (exportBtn) {
       exportBtn.addEventListener("click", () => {
-        const selectedRadio = document.querySelector('input[name="export_run_id"]:checked');
+        const selectedRadio = document.querySelector(
+          'input[name="export_run_id"]:checked',
+        );
         let runIdParam = "";
         if (selectedRadio) {
           if (String(selectedRadio.value).startsWith("local_")) {
-            alert("Não é possível exportar rodadas locais não salvas no banco de dados.");
+            alert(
+              "Não é possível exportar rodadas locais não salvas no banco de dados.",
+            );
             return;
           }
           runIdParam = `&run_id=${selectedRadio.value}`;
@@ -124,7 +153,9 @@ window.UIManager = {
           username = window.SIM_STATE.currentUser;
         } else {
           username = prompt(
-            "Digite seu username para exportar seu histórico (deixe em branco para exportar todos" + (selectedRadio ? ", a run selecionada será filtrada" : "") + "):",
+            "Digite seu username para exportar seu histórico (deixe em branco para exportar todos" +
+              (selectedRadio ? ", a run selecionada será filtrada" : "") +
+              "):",
             "",
           );
         }
@@ -132,7 +163,7 @@ window.UIManager = {
         if (username !== null) {
           let url = `${API_BASE_URL}/api/v1/runs/export`;
           let hasQuery = false;
-          
+
           if (username.trim() !== "") {
             url += "?username=" + encodeURIComponent(username.trim());
             hasQuery = true;
@@ -140,7 +171,7 @@ window.UIManager = {
           if (selectedRadio) {
             url += (hasQuery ? "&" : "?") + "run_id=" + selectedRadio.value;
           }
-          
+
           window.open(url, "_blank");
           if (selectedRadio) selectedRadio.checked = false;
         }
@@ -231,6 +262,61 @@ window.UIManager = {
     if (!localStorage.getItem("pid_tutorial_done")) {
       this.showOnboarding();
     }
+
+    // Botões de Relevo da Pista (Fase 1)
+    document.querySelectorAll(".btn-terrain").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".btn-terrain").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const mode = btn.dataset.terrain;
+        if (window.Scene3D && window.Scene3D.setTerrainMode) {
+          window.Scene3D.setTerrainMode(mode);
+        }
+        if (window.SIM_STATE) {
+          window.SIM_STATE.terrainMode = mode;
+        }
+      });
+    });
+
+    // Toggles de Telemetria Didática (Chart.js)
+    const toggleMap = [
+      { id: "chk-pv", index: 0 },
+      { id: "chk-sp", index: 1 },
+      { id: "chk-p", index: 2 },
+      { id: "chk-i", index: 3 },
+      { id: "chk-d", index: 4 },
+      { id: "chk-theory", index: 5 }
+    ];
+    toggleMap.forEach(({ id, index }) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("change", (e) => {
+          if (window.ChartAnalytics && window.ChartAnalytics.toggleDataset) {
+            window.ChartAnalytics.toggleDataset(index, e.target.checked);
+          }
+        });
+      }
+    });
+
+    // Assistente de Sintonia Clássica
+    const btnTuning = document.getElementById("btn-open-tuning");
+    const btnCloseTuning = document.getElementById("tuning-close-btn");
+    if (btnTuning) {
+      btnTuning.addEventListener("click", () => {
+        if (window.TuningAssistant) window.TuningAssistant.openModal();
+      });
+    }
+    if (btnCloseTuning) {
+      btnCloseTuning.addEventListener("click", () => {
+        if (window.TuningAssistant) window.TuningAssistant.closeModal();
+      });
+    }
+    document.querySelectorAll(".btn-apply-tuning").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const type = e.target.dataset.tuningType;
+        if (window.TuningAssistant) window.TuningAssistant.applyTuning(type);
+      });
+    });
   },
 
   loginUser: function (username) {
@@ -277,23 +363,23 @@ window.UIManager = {
 
     const steps = [
       {
-        title: "Bem-vindo ao PID Simulator! 🎓",
+        title: "Bem-vindo ao PID Simulator!",
         text: "Neste simulador, você aprenderá a sintonizar Controladores Proporcionais, Integrais e Derivativos (PID) resolvendo desafios físicos reais.",
       },
       {
-        title: "O Editor de Código 💻",
+        title: "O Editor de Código",
         text: "À esquerda, você verá um editor de código JavaScript. É aqui que você escreverá a lógica do seu controlador. Variáveis como <code>error</code>, <code>integral</code> e <code>derivative</code> já estão injetadas para você usar.",
       },
       {
-        title: "A Simulação 3D 🚀",
+        title: "A Simulação 3D",
         text: "À direita, a simulação responderá em tempo real ao seu código. Seu objetivo é fazer com que o sistema atinja a 'Meta' o mais rápido possível e de forma estável.",
       },
       {
-        title: "Métricas e Gráficos 📊",
+        title: "Métricas e Gráficos",
         text: "Você pode observar o comportamento do sistema nos Gráficos e avaliar seu desempenho na aba de Métricas. Quanto melhores as métricas, maior sua pontuação!",
       },
       {
-        title: "Vamos começar! 🏁",
+        title: "Vamos começar!",
         text: "Experimente rodar a primeira simulação (Carro na Pista) com os parâmetros padrão. Clique em 'Concluir' para fechar este tutorial e começar sua jornada.",
       },
     ];
@@ -366,15 +452,15 @@ window.UIManager = {
     if (descEl) {
       if (lvl === 2) {
         const abs = Math.abs(disturbance);
-        if (abs < 5) descEl.textContent = "🌤 Vento calmo";
-        else if (abs < 30) descEl.textContent = "💨 Vento moderado";
-        else if (abs < 60) descEl.textContent = "🌬 Rajada forte!";
-        else descEl.textContent = "🌪 Tempestade!";
+        if (abs < 5) descEl.textContent = "Vento calmo";
+        else if (abs < 30) descEl.textContent = "Vento moderado";
+        else if (abs < 60) descEl.textContent = "Rajada forte!";
+        else descEl.textContent = "Tempestade!";
       } else if (lvl === 3) {
         const abs = Math.abs(disturbance);
-        if (abs < 200) descEl.textContent = "🌊 Corrente suave";
-        else if (abs < 600) descEl.textContent = "🌊🌊 Corrente moderada";
-        else descEl.textContent = "🌊🌊🌊 Corrente intensa!";
+        if (abs < 200) descEl.textContent = "Corrente suave";
+        else if (abs < 600) descEl.textContent = "Corrente moderada";
+        else descEl.textContent = "Corrente intensa!";
       }
     }
   },
@@ -392,12 +478,21 @@ window.UIManager = {
     if (errBox) errBox.style.display = "none";
   },
 
-  updateMetrics: function (riseTime, overshoot, settlingTime, error, vel, iae, ise, itae) {
+  updateMetrics: function (
+    riseTime,
+    overshoot,
+    settlingTime,
+    error,
+    vel,
+    iae,
+    ise,
+    itae,
+  ) {
     const riseEl = document.getElementById("rise-time");
     const overEl = document.getElementById("overshoot");
     const errEl = document.getElementById("final-error");
     const settleEl = document.getElementById("settling-time");
-    
+
     const iaeEl = document.getElementById("metric-iae");
     const iseEl = document.getElementById("metric-ise");
     const itaeEl = document.getElementById("metric-itae");
@@ -415,7 +510,7 @@ window.UIManager = {
         settleEl.textContent = "Pendente...";
       }
     }
-    
+
     if (iaeEl && iae !== undefined) iaeEl.textContent = iae.toFixed(2);
     if (iseEl && ise !== undefined) iseEl.textContent = ise.toFixed(2);
     if (itaeEl && itae !== undefined) itaeEl.textContent = itae.toFixed(2);
@@ -440,7 +535,10 @@ window.UIManager = {
 
       const actionHtml = isLocal
         ? '<span style="color: #94a3b8; font-size: 0.9em;">Indisponível (Local)</span>'
-        : `<a href="${API_BASE_URL}/api/v1/runs/${run.id}/report" class="btn-download" style="color: #1a6e8a; font-weight: bold; text-decoration: underline;" download> Baixar PDF</a>`;
+        : `<div style="display: flex; gap: 8px; align-items: center;">
+             <a href="${API_BASE_URL}/api/v1/runs/${run.id}/report" class="btn-download" style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;" download><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF</a>
+             <a href="${API_BASE_URL}/api/v1/runs/${run.id}/export-csv" class="btn-download" style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;" download><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</a>
+           </div>`;
 
       row.innerHTML = `
                 <td><input type="radio" name="export_run_id" value="${run.id}" style="cursor: pointer;"></td>
@@ -487,18 +585,18 @@ window.UIManager = {
       let challengeMsg = "";
       const lvlObj =
         window.LevelManager && window.SIM_STATE
-          ? window.LevelManager.levels[window.SIM_STATE.currentLevel]
+            ? window.LevelManager.levels[window.SIM_STATE.currentLevel]
           : null;
       if (lvlObj && lvlObj.challenge) {
         const passed = lvlObj.challenge.check(payload);
         if (passed) {
           challengeMsg =
-            "<div style='color:#04A777; font-weight:bold; margin-top:10px; font-size:1.1em;'>🏅 " +
+            "<div style='color:var(--success, #10B981); font-weight:bold; margin-top:10px; font-size:1.1em; display:flex; align-items:center; gap:6px;'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'></polyline></svg> " +
             lvlObj.challenge.text +
             " CONCLUÍDO!</div>";
         } else {
           challengeMsg =
-            "<div style='color:#FFB703; margin-top:10px;'>❌ Desafio não atingido desta vez. Tente novamente!</div>";
+            "<div style='color:var(--warning, #F59E0B); margin-top:10px; display:flex; align-items:center; gap:6px;'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><line x1='18' y1='6' x2='6' y2='18'></line><line x1='6' y1='6' x2='18' y2='18'></line></svg> Desafio não atingido desta vez. Tente novamente!</div>";
         }
       }
 
@@ -588,9 +686,6 @@ window.UIManager = {
         data.forEach((entry, index) => {
           const row = document.createElement("tr");
           let posMedal = `${index + 1}º`;
-          if (index === 0) posMedal = "🥇 1º";
-          if (index === 1) posMedal = "🥈 2º";
-          if (index === 2) posMedal = "🥉 3º";
 
           const dateStr = new Date(entry.created_at).toLocaleDateString(
             "pt-BR",
