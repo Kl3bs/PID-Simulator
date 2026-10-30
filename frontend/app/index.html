@@ -42,19 +42,15 @@
           <!-- Brand -->
           <div class="header-brand">
             <div>
-              <h1 id="header-title">Navio no Porto</h1>
-              <p class="header-subtitle" id="header-subtitle-text">Atracação com Correntes Oceânicas</p>
+              <h1 id="header-title">Carro na Pista 3D</h1>
+              <p class="header-subtitle" id="header-subtitle-text">Controle de Posição Linear com Relevo Dinâmico</p>
             </div>
           </div>
         </div>
 
-        <!-- Right side: level selector + date + actions -->
+        <!-- Right side: badge + date + actions -->
         <div class="header-right">
-          <!-- Seletor de Fases -->
-          <div id="level-selector" class="level-selector">
-            <!-- Gerado dinamicamente pelo LevelManager -->
-          </div>
-          <div class="level-badge" id="current-level-badge">FASE 3</div>
+          <div class="level-badge" id="current-level-badge" style="background: rgba(0, 227, 150, 0.15); color: #00E396; border: 1px solid rgba(0, 227, 150, 0.3); font-weight: 700; letter-spacing: 0.5px;">BANCADA DIDÁTICA 3D</div>
 
           <!-- Data -->
           <div class="header-date">
@@ -66,14 +62,6 @@
           <button class="topbar-icon-btn" title="Tema">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
           </button>
-          <button class="topbar-icon-btn" title="Notificações" style="position:relative;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
-            <span class="badge"></span>
-          </button>
-
-          <!-- Login / User -->
-          <button id="login-btn" class="btn btn-secondary">Login</button>
-          <span id="user-display" style="display: none"></span>
         </div>
       </div>
 
@@ -98,34 +86,10 @@
             <path d="M12 7v5l4 2"></path>
           </svg>
         </button>
-        <button class="icon-rail-btn" id="rail-btn-ranking" title="Ranking">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
-            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
-            <path d="M4 22h16"></path>
-            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
-            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
-            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
-          </svg>
-        </button>
-        <button class="icon-rail-btn" id="rail-btn-learn" title="Aprenda PID / Guia">
+        <button class="icon-rail-btn" data-tab="learn" title="Aprenda PID / Guia">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-          </svg>
-        </button>
-        <div class="icon-rail-spacer"></div>
-        <button class="icon-rail-btn" id="rail-btn-settings" title="Configurações">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </button>
-        <button class="icon-rail-btn" id="rail-btn-help" title="Ajuda">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
         </button>
       </div>
@@ -162,14 +126,19 @@
             </p>
             <div class="code-editor-container">
               <textarea class="code-editor" id="custom-code" spellcheck="false">
-// Fase 1: Carro na Pista
-let kp = 0.5;
-let ki = 0.0;
-let kd = 0.0;
+// Controle de Posição do Veículo na Pista 3D (TCC Benchmark Ótimo)
+let kp = 28.0;
+let ki = 1.2;
+let kd = 85.0;
 
+// Força PID + Feedforward da perturbação de relevo (-disturbance)
+// Dica: Use o botão 'Anti-Windup' na barra para alternar clamping ON/OFF
 let forca = (kp * error) + 
             (ki * integral) + 
-            (kd * derivative);
+            (kd * derivative) - disturbance;
+
+// Limite do atuador do motor [-1500N, 1500N]
+forca = Math.max(-1500, Math.min(1500, forca));
 
 return forca;</textarea>
             </div>
@@ -179,16 +148,16 @@ return forca;</textarea>
           <!-- Slider de Alvo -->
           <div style="padding: 10px 14px; border-bottom: 1px solid var(--border);">
             <div class="control-label">
-              <span id="target-label">Posição do Cais (m)</span>
-              <span class="control-value" id="target-value">300</span>
+              <span id="target-label">Meta da Pista (m)</span>
+              <span class="control-value" id="target-value">600</span>
             </div>
             <input
               type="range"
               class="slider"
               id="target-slider"
-              min="150"
-              max="450"
-              step="30"
+              min="100"
+              max="900"
+              step="50"
               value="600"
             />
           </div>
@@ -225,23 +194,12 @@ return forca;</textarea>
 
         </div>
 
-        <!-- Footer: botões e sintonia -->
+        <!-- Footer: botões de simulação -->
         <div class="control-panel-footer">
-          <!-- Sintonia -->
-          <button class="btn btn-secondary btn-tuning" id="btn-open-tuning">
-            <span class="tuning-icon">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            </span>
-            <span class="tuning-text-group">
-              <span class="tuning-primary-text">Assistente de Sintonia</span>
-              <span class="tuning-secondary-text">Ziegler-Nichols & Cohen-Coon</span>
-            </span>
-          </button>
-
           <!-- Play / Reset -->
-          <div class="buttons-group">
-            <button class="btn btn-secondary" id="reset-btn">Reset</button>
-            <button class="btn btn-primary" id="play-btn">PAUSA</button>
+          <div class="buttons-group" style="width: 100%;">
+            <button class="btn btn-secondary" id="reset-btn" style="flex: 1;">Reset</button>
+            <button class="btn btn-primary" id="play-btn" style="flex: 2;">PAUSA</button>
           </div>
         </div>
       </div>
@@ -258,6 +216,11 @@ return forca;</textarea>
             <button class="btn-terrain" data-terrain="incline">Aclive ↗</button>
             <button class="btn-terrain" data-terrain="decline">Declive ↘</button>
             <button class="btn-terrain" data-terrain="wave">Ondulações ~</button>
+            <span style="color: rgba(255,255,255,0.2); margin: 0 4px;">|</span>
+            <button class="btn-terrain active" id="btn-toggle-antiwindup" title="Clique para alternar entre Anti-Windup (Clamping) e Integrator Windup autêntico" style="background: rgba(0, 230, 118, 0.15); border-color: #00E676; color: #00E676; display: inline-flex; align-items: center; gap: 5px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>Anti-Windup: ON</span>
+            </button>
           </div>
           <div id="canvas-container">
             <canvas width="1203" height="326" style="display: block; width: 100%; height: 100%"></canvas>
@@ -297,7 +260,6 @@ return forca;</textarea>
           <button class="tab-btn active" data-tab="chart">Comportamento Visual</button>
           <button class="tab-btn" data-tab="metrics">Métricas</button>
           <button class="tab-btn" data-tab="history">Histórico</button>
-          <button class="tab-btn" data-tab="ranking">Ranking</button>
           <button class="tab-btn" data-tab="learn">Aprenda PID</button>
         </div>
 
@@ -311,9 +273,26 @@ return forca;</textarea>
               <label class="toggle-item signal-i"><input type="checkbox" id="chk-i" checked /> <span>Ação I</span></label>
               <label class="toggle-item signal-d"><input type="checkbox" id="chk-d" checked /> <span>Ação D</span></label>
               <label class="toggle-item signal-theory"><input type="checkbox" id="chk-theory" /> <span>Curva Teórica</span></label>
+              <label class="toggle-item signal-band" title="Faixa de Tolerância ±2% em torno do Setpoint (Critério de Acomodação)"><input type="checkbox" id="chk-band" class="chk-band-sync" checked /> <span>Faixa ±2%</span></label>
+              <label class="toggle-item signal-antiwindup" title="Alternar Clamping Anti-Windup"><input type="checkbox" id="chk-antiwindup-chart" checked /> <span style="color: #00E676; font-weight: 700;">Anti-Windup</span></label>
             </div>
-            <div class="rmse-badge">
-              <span>RMSE:</span> <strong id="metric-rmse">0.00</strong>
+            <div class="chart-actions-group">
+              <div class="time-horizon-selector" title="Horizonte de tempo da curva">
+                <span class="horizon-label">Janela:</span>
+                <button type="button" class="btn-time-window" data-window="10">10s</button>
+                <button type="button" class="btn-time-window" data-window="30">30s</button>
+                <button type="button" class="btn-time-window" data-window="60">60s</button>
+                <button type="button" class="btn-time-window active" data-window="full" title="Exibe todo o ensaio desde t=0 sem perder a forma da curva">Completo</button>
+              </div>
+              <div class="rmse-badge">
+                <span>RMSE:</span> <strong id="metric-rmse" class="metric-rmse-val">0.00</strong>
+              </div>
+              <button type="button" class="btn-chart-tool btn-popout-chart" id="btn-popout-chart" title="Destacar gráfico em janela redimensionável flutuante">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                </svg>
+                <span>Destacar Janela</span>
+              </button>
             </div>
           </div>
           <div class="chart-container-inner">
@@ -383,25 +362,7 @@ return forca;</textarea>
           </div>
         </div>
 
-        <!-- RANKING TAB -->
-        <div class="tab-content" id="ranking">
-          <div class="history-container">
-            <table class="history-table">
-              <thead>
-                <tr>
-                  <th>Posição</th>
-                  <th>Estudante</th>
-                  <th>Fase</th>
-                  <th>Pontuação</th>
-                  <th>Data</th>
-                </tr>
-              </thead>
-              <tbody id="leaderboard-body">
-                <!-- Preenchido via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
+
 
         <!-- LEARN TAB -->
         <div class="tab-content" id="learn">
@@ -556,52 +517,18 @@ return forca;</textarea>
             </div>
           </div>
 
-          <!-- Route Progress (Phase stops) -->
+          <!-- Informações Didáticas da Planta -->
           <div class="detail-section">
             <div class="detail-section-header">
-              <span class="detail-section-title">Progresso da Fase</span>
+              <span class="detail-section-title">Dinâmica e Controle PID</span>
               <span class="detail-section-collapse">▾</span>
             </div>
-            <div class="route-stop">
-              <div class="route-stop-dot done"></div>
-              <div class="route-stop-info">
-                <div class="route-stop-name">Fase 1 — Carro na Pista</div>
-                <div class="route-stop-desc">Concluído · P simples</div>
-              </div>
-            </div>
-            <div class="route-stop">
-              <div class="route-stop-dot done"></div>
-              <div class="route-stop-info">
-                <div class="route-stop-name">Fase 2 — Drone no Ar</div>
-                <div class="route-stop-desc">Concluído · PI com vento</div>
-              </div>
-            </div>
-            <div class="route-stop">
-              <div class="route-stop-dot current"></div>
-              <div class="route-stop-info">
-                <div class="route-stop-name">Fase 3 — Navio no Porto</div>
-                <div class="route-stop-desc">Em curso · ETA 10:15 AM</div>
-              </div>
-            </div>
-            <div class="route-stop">
-              <div class="route-stop-dot"></div>
-              <div class="route-stop-info">
-                <div class="route-stop-name">Desafio Final</div>
-                <div class="route-stop-desc">Destino · PID completo</div>
-              </div>
+            <div style="padding: 12px; font-size: 0.8em; color: var(--text-secondary); line-height: 1.5; background: var(--bg-surface-2); border-radius: 6px; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 8px;">
+              <div><strong style="color: var(--accent);">Ação Proporcional (P):</strong> Acelera o veículo em direção ao setpoint com base no erro instantâneo.</div>
+              <div><strong style="color: #00E396;">Ação Integral (I):</strong> Essencial para anular o erro de regime permanente contra rampas e gravidade.</div>
+              <div><strong style="color: #FEB019;">Ação Derivativa (D):</strong> Freia a aproximação e amortece o sobressinal (overshoot).</div>
             </div>
           </div>
-
-          <!-- Assistente de Sintonia button -->
-          <button class="btn btn-secondary btn-tuning" id="btn-open-tuning-2" onclick="document.getElementById('btn-open-tuning').click()">
-            <span class="tuning-icon">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            </span>
-            <span class="tuning-text-group">
-              <span class="tuning-primary-text">Assistente de Sintonia</span>
-              <span class="tuning-secondary-text">Ziegler-Nichols & Cohen-Coon</span>
-            </span>
-          </button>
 
         </div>
       </div>
@@ -614,17 +541,13 @@ return forca;</textarea>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
 
-    <script src="js/PhysicsEngine.js?v=6"></script>
-    <script src="js/Scene3D.js?v=6"></script>
-    <script src="js/SceneBallAndBeam.js?v=6"></script>
-    <script src="js/SceneWaterTank.js?v=6"></script>
-    <script src="js/SceneDrone.js?v=5"></script>
-    <script src="js/SceneShip.js?v=5"></script>
-    <script src="js/ChartAnalytics.js?v=6"></script>
+    <script src="js/PhysicsEngine.js?v=7"></script>
+    <script src="js/Scene3D.js?v=16"></script>
+    <script src="js/ChartAnalytics.js?v=7"></script>
+    <script src="js/ChartWindowManager.js?v=1"></script>
     <script src="js/CodeEditor.js?v=5"></script>
-    <script src="js/TuningAssistant.js?v=5"></script>
-    <script src="js/LevelManager.js?v=5"></script>
-    <script src="js/UIManager.js?v=5"></script>
+    <script src="js/LevelManager.js?v=7"></script>
+    <script src="js/UIManager.js?v=7"></script>
 
     <!-- Sync detail panel with live stats -->
     <script>
@@ -662,101 +585,22 @@ return forca;</textarea>
       window.addEventListener("load", () => {
         if (window.UIManager) window.UIManager.init();
         if (window.ChartAnalytics) window.ChartAnalytics.init("responseChart");
+        if (window.ChartWindowManager) window.ChartWindowManager.init();
         if (window.LevelManager) window.LevelManager.init();
-        if (window.TuningAssistant && window.TuningAssistant.init) window.TuningAssistant.init();
       });
     </script>
 
-    <!-- ======================== MODAL SINTONIA ======================== -->
-    <div id="tuning-modal" class="modal-overlay" style="display: none; z-index: 2500;">
-      <div class="modal-content tuning-modal-content">
-        <div class="modal-header">
-          <div class="modal-title-group">
-            <h2 style="display: flex; align-items: center; gap: 8px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-              Assistente de Sintonia
-            </h2>
-            <span class="modal-subtitle">Identificação em Malha Aberta (FOPTD) — Ziegler-Nichols & Cohen-Coon</span>
-          </div>
-          <button id="tuning-close-btn" class="modal-close-btn" aria-label="Fechar">&times;</button>
-        </div>
-        <p class="modal-description">
-          Parâmetros estimados da dinâmica da planta a partir da resposta ao degrau em malha aberta:
-        </p>
-        <div id="tuning-plant-info" class="tuning-plant-grid">
-          <!-- Preenchido via JS -->
-        </div>
-        <div class="tuning-section-header">
-          <h3>Regras de Sintonia Teórica</h3>
-          <span class="tuning-section-hint">Clique em "Aplicar" para carregar os ganhos no editor</span>
-        </div>
-        <div class="tuning-table-wrapper">
-          <table class="tuning-table">
-            <thead>
-              <tr>
-                <th style="text-align: left; padding-left: 14px;">Método</th>
-                <th>Estrutura</th>
-                <th>Kp</th>
-                <th>Ki</th>
-                <th>Kd</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="table-cell-method">Ziegler-Nichols</td>
-                <td><span class="tuning-tag">P</span></td>
-                <td id="zn-p-kp" class="mono">--</td>
-                <td id="zn-p-ki" class="mono">--</td>
-                <td id="zn-p-kd" class="mono">--</td>
-                <td><button class="btn-apply-tuning" data-tuning-type="zn-p">Aplicar</button></td>
-              </tr>
-              <tr>
-                <td class="table-cell-method">Ziegler-Nichols</td>
-                <td><span class="tuning-tag">PI</span></td>
-                <td id="zn-pi-kp" class="mono">--</td>
-                <td id="zn-pi-ki" class="mono">--</td>
-                <td id="zn-pi-kd" class="mono">--</td>
-                <td><button class="btn-apply-tuning" data-tuning-type="zn-pi">Aplicar</button></td>
-              </tr>
-              <tr class="row-recommended">
-                <td class="table-cell-method">Ziegler-Nichols <span class="tag-rec">Recomendado</span></td>
-                <td><span class="tuning-tag tag-pid">PID</span></td>
-                <td id="zn-pid-kp" class="mono">--</td>
-                <td id="zn-pid-ki" class="mono">--</td>
-                <td id="zn-pid-kd" class="mono">--</td>
-                <td><button class="btn-apply-tuning btn-recommended" data-tuning-type="zn-pid">Aplicar</button></td>
-              </tr>
-              <tr>
-                <td class="table-cell-method">Cohen-Coon</td>
-                <td><span class="tuning-tag tag-pid">PID</span></td>
-                <td id="cc-pid-kp" class="mono">--</td>
-                <td id="cc-pid-ki" class="mono">--</td>
-                <td id="cc-pid-kd" class="mono">--</td>
-                <td><button class="btn-apply-tuning" data-tuning-type="cc-pid">Aplicar</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <!-- ======================== MODAL RESULTADO ======================== -->
     <div id="result-modal" class="modal-overlay" style="display: none">
-      <div class="modal-content">
+      <div class="modal-content" style="position: relative;">
+        <button id="modal-btn-close" type="button" aria-label="Fechar" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 22px; color: var(--text-secondary); cursor: pointer; line-height: 1;">&times;</button>
         <h2 id="modal-title">Simulação Estabilizada!</h2>
-        <div class="modal-score">
-          <span>Sua pontuação estimada:</span>
-          <strong id="modal-score-value">--/100</strong>
-        </div>
         <p class="modal-text">
-          Para salvar seu histórico e gerar o relatório PDF detalhado com o
-          <b>Diagnóstico Pedagógico</b>, insira seu nome abaixo:
+          Insira seu nome abaixo para emitir o relatório técnico em PDF:
         </p>
-        <input type="text" id="modal-username" class="modal-input" placeholder="Seu nome ou matrícula" />
+        <input type="text" id="modal-username" class="modal-input" placeholder="Seu nome ou matrícula (Opcional)" autocomplete="name" />
         <div class="modal-buttons">
-          <button class="btn btn-primary" id="modal-btn-save-report">Salvar e Gerar Relatório PDF</button>
-          <button class="btn btn-secondary modal-btn-alt" id="modal-btn-save-only">Salvar Localmente (sem PDF)</button>
+          <button class="btn btn-primary" id="modal-btn-save-report">Gerar Relatório PDF</button>
         </div>
       </div>
     </div>
@@ -774,20 +618,92 @@ return forca;</textarea>
       </div>
     </div>
 
-    <!-- ======================== MODAL LOGIN ======================== -->
-    <div id="login-modal" class="modal-overlay" style="display: none; z-index: 2000">
-      <div class="modal-content" style="max-width: 400px; text-align: center">
-        <h2 style="color: var(--text-primary); margin-bottom: 15px">Acessar Histórico</h2>
-        <p class="modal-text" style="margin-bottom: 20px">
-          Digite seu nome de usuário para carregar suas tentativas salvas.
-        </p>
-        <input type="text" id="login-username-input" class="modal-input" placeholder="Seu nome ou matrícula" />
-        <div class="modal-buttons" style="justify-content: center; margin-top: 15px">
-          <button class="btn btn-primary" id="login-confirm-btn">Carregar</button>
-          <button class="btn" id="login-cancel-btn">Cancelar</button>
+    <!-- ======================== JANELA FLUTUANTE DE TELEMETRIA PID ======================== -->
+    <div id="floating-chart-window" class="floating-chart-window" style="display: none;">
+      <!-- Header com Alça de Arrasto (Drag Handle) e Botões de Ação -->
+      <div class="floating-chart-header" id="floating-chart-drag-handle">
+        <div class="floating-chart-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span>Telemetria & Curva de Resposta PID</span>
+          <span class="floating-chart-badge" id="floating-chart-status-badge">Janela Ativa</span>
+        </div>
+        <div class="floating-window-actions">
+          <button type="button" class="window-action-btn btn-export-png" title="Exportar Gráfico em Imagem PNG (TCC/Apresentação)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span class="btn-action-text">PNG</span>
+          </button>
+          <button type="button" class="window-action-btn btn-export-csv" title="Exportar Dados em CSV (MATLAB/Python)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span class="btn-action-text">CSV</span>
+          </button>
+          <button type="button" class="window-action-btn" id="btn-chart-external" title="Abrir em Janela Separada do Navegador (Multi-monitores)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </button>
+          <button type="button" class="window-action-btn" id="btn-chart-maximize" title="Maximizar / Restaurar Janela">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+          </button>
+          <button type="button" class="window-action-btn" id="btn-chart-dock" title="Ancorar de Volta no Painel Inferior">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+          </button>
+          <button type="button" class="window-action-btn close-btn" id="btn-chart-close" title="Fechar Janela Flutuante">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Ferramentas com Toggles e Filtros Idênticos -->
+      <div class="floating-chart-toolbar">
+        <div class="floating-signals-group">
+          <label class="toggle-item signal-pv"><input type="checkbox" id="chk-pv-flt" checked /> <span>y(t) Posição</span></label>
+          <label class="toggle-item signal-sp"><input type="checkbox" id="chk-sp-flt" checked /> <span>r(t) Meta</span></label>
+          <label class="toggle-item signal-p"><input type="checkbox" id="chk-p-flt" checked /> <span>Ação P</span></label>
+          <label class="toggle-item signal-i"><input type="checkbox" id="chk-i-flt" checked /> <span>Ação I</span></label>
+          <label class="toggle-item signal-d"><input type="checkbox" id="chk-d-flt" checked /> <span>Ação D</span></label>
+          <label class="toggle-item signal-theory"><input type="checkbox" id="chk-theory-flt" /> <span>Curva Teórica</span></label>
+          <label class="toggle-item signal-band" title="Faixa de Tolerância ±2% em torno do Setpoint"><input type="checkbox" id="chk-band-flt" class="chk-band-sync" checked /> <span>Faixa ±2%</span></label>
+          <label class="toggle-item signal-antiwindup" title="Alternar Clamping Anti-Windup"><input type="checkbox" id="chk-antiwindup-flt" checked /> <span style="color: #00E676; font-weight: 700;">Anti-Windup</span></label>
+        </div>
+        <div class="floating-tools-group">
+          <div class="time-horizon-selector" title="Horizonte de tempo da curva">
+            <span class="horizon-label">Janela:</span>
+            <button type="button" class="btn-time-window" data-window="10">10s</button>
+            <button type="button" class="btn-time-window" data-window="30">30s</button>
+            <button type="button" class="btn-time-window" data-window="60">60s</button>
+            <button type="button" class="btn-time-window active" data-window="full" title="Exibe todo o ensaio desde t=0 sem perder a forma da curva">Completo</button>
+          </div>
+          <div class="rmse-badge">
+            <span>RMSE:</span> <strong class="metric-rmse-val">0.00</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas do Gráfico Flutuante -->
+      <div class="floating-chart-canvas-container" id="floating-chart-canvas-container">
+        <canvas id="responseChartFloating"></canvas>
+      </div>
+
+      <!-- Rodapé com Telemetria Dinâmica e Alça de Redimensionamento -->
+      <div class="floating-chart-footer">
+        <div class="floating-footer-telemetry">
+          <span>Tempo: <strong id="flt-stat-time">0.00s</strong></span>
+          <span>Posição: <strong id="flt-stat-pos">0.00m</strong></span>
+          <span>Setpoint: <strong id="flt-stat-sp">0.00m</strong></span>
+          <span>Erro: <strong id="flt-stat-err">0.00m</strong></span>
+          <span class="flt-stat-points-wrap">Amostras: <strong id="flt-stat-points">0</strong></span>
+        </div>
+        <div class="floating-resize-grip" title="Arraste para redimensionar livremente">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="20" y1="4" x2="4" y2="20"></line>
+            <line x1="20" y1="10" x2="10" y2="20"></line>
+            <line x1="20" y1="16" x2="16" y2="20"></line>
+          </svg>
         </div>
       </div>
     </div>
+
+
 
     <div
       id="preact-border-shadow-host"

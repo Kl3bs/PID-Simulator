@@ -38,12 +38,18 @@ def create_run(
                 db.refresh(user)
             user_id = user.id
 
+    # Determina o setpoint a partir da time_series (se disponível)
+    setpoint_val = 600.0
+    if run_in.time_series and len(run_in.time_series) > 0:
+        setpoint_val = abs(run_in.time_series[0].setpoint) or 600.0
+
     score = calculate_run_score(
         level_name=run_in.level_name,
         rise_time=run_in.rise_time,
         overshoot=run_in.overshoot,
         settling_time=run_in.settling_time,
-        final_error=run_in.final_error
+        final_error=run_in.final_error,
+        setpoint=setpoint_val
     )
 
     # Converte a série temporal de Pydantic para Dict/List
@@ -126,6 +132,49 @@ def get_run_report(
     return StreamingResponse(
         pdf_buf,
         media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@router.get("/{run_id}/export-csv")
+def export_single_run_csv(
+    run_id: int,
+    db: Session = Depends(deps.get_db)
+):
+    """
+    Exporta a série temporal de uma única rodada (run) em formato CSV limpo para importação no TCC / Python / MATLAB.
+    """
+    run = db.query(Run).filter(Run.id == run_id).first()
+    if not run:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Simulação (run) não encontrada."
+        )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "time_s", "position_y", "setpoint_r", "error_e", "force_u", "u_p", "u_i", "u_d", "disturbance"
+    ])
+
+    if run.time_series:
+        for pt in run.time_series:
+            writer.writerow([
+                f"{pt.get('time', 0.0):.3f}",
+                f"{pt.get('position', 0.0):.3f}",
+                f"{pt.get('setpoint', 0.0):.3f}",
+                f"{pt.get('error', 0.0):.3f}",
+                f"{pt.get('force', 0.0):.3f}",
+                f"{pt.get('u_p', 0.0):.3f}",
+                f"{pt.get('u_i', 0.0):.3f}",
+                f"{pt.get('u_d', 0.0):.3f}",
+                f"{pt.get('disturbance', 0.0):.3f}"
+            ])
+
+    output.seek(0)
+    filename = f"run_{run_id}_telemetria_tcc.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 

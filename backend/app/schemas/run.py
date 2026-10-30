@@ -8,6 +8,9 @@ class TimeSeriesPoint(BaseModel):
     setpoint: float
     error: float
     force: float
+    u_p: Optional[float] = 0.0
+    u_i: Optional[float] = 0.0
+    u_d: Optional[float] = 0.0
     disturbance: float = 0.0
 
 class RunCreate(BaseModel):

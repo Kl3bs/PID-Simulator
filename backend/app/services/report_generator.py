@@ -1,58 +1,84 @@
 import io
 import matplotlib
-matplotlib.use("Agg") # Evita problemas com backend de interface em ambientes headless/Docker
+matplotlib.use("Agg")  # Evita problemas com backend de interface gráfica em headless/Docker
 import matplotlib.pyplot as plt
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, KeepTogether
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
+)
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
-from app.services.score_service import generate_diagnosis
+def format_pt_br(val: Optional[float], decimals: int = 2) -> str:
+    """
+    Formata valores numéricos para o padrão brasileiro:
+    separador de milhar por ponto e decimais por vírgula.
+    """
+    if val is None:
+        return "--"
+    try:
+        formatted = f"{float(val):,.{decimals}f}"
+        return formatted.replace(",", "X").replace(".", ",").replace("X", ".")
+    except (ValueError, TypeError):
+        return "--"
 
 def generate_chart(time_series: List[Dict[str, Any]], prev_time_series: List[Dict[str, Any]] = None) -> io.BytesIO:
     """
     Gera o gráfico da simulação usando matplotlib e retorna em um buffer de memória (BytesIO).
     Se prev_time_series for fornecido, adiciona a tentativa anterior para comparação.
+    Inclui a decomposição didática das ações P, I e D.
     """
     times = [p["time"] for p in time_series]
     positions = [p["position"] for p in time_series]
     setpoints = [p["setpoint"] for p in time_series]
     errors = [p["error"] for p in time_series]
     forces = [p["force"] for p in time_series]
+    ups = [p.get("u_p", 0.0) for p in time_series]
+    uis = [p.get("u_i", 0.0) for p in time_series]
+    uds = [p.get("u_d", 0.0) for p in time_series]
     disturbances = [p.get("disturbance", 0.0) for p in time_series]
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 5.2), sharex=True)
     fig.patch.set_facecolor('#FCFCFD')
 
     # Gráfico Superior: Posição, Setpoint e Erro
     ax1.set_facecolor('#FAFAFB')
-    ax1.plot(times, positions, label="Posição (Atual)", color="#04A777", linewidth=2)
+    ax1.plot(times, positions, label="Posição y(t)", color="#00A896", linewidth=2)
     
     if prev_time_series:
         prev_times = [p["time"] for p in prev_time_series]
         prev_positions = [p["position"] for p in prev_time_series]
         ax1.plot(prev_times, prev_positions, label="Posição (Tentativa Anterior)", color="#94A3B8", linewidth=1.5, linestyle="-.", alpha=0.7)
 
-    ax1.plot(times, setpoints, label="Meta (Setpoint)", color="#1A1A2E", linestyle="--", linewidth=1.5)
-    ax1.plot(times, errors, label="Erro", color="#FFB703", linewidth=1, alpha=0.8)
+    ax1.plot(times, setpoints, label="Meta r(t)", color="#D90429", linestyle="--", linewidth=1.5)
+    ax1.plot(times, errors, label="Erro e(t)", color="#FFB703", linewidth=1, alpha=0.8)
     ax1.set_ylabel("Posição / Erro (m)")
     ax1.grid(True, linestyle=":", alpha=0.6, color="#CCCCCC")
     ax1.legend(loc="upper right", framealpha=0.9, facecolor='#FFFFFF', fontsize='small')
-    ax1.set_title("Comportamento do Sistema PID", fontsize=12, color="#0D3B59", fontweight="bold")
+    ax1.set_title("Comportamento Dinâmico e Telemetria PID", fontsize=11, color="#0D3B59", fontweight="bold")
 
-    # Gráfico Inferior: Ação de Controle (Força) e Perturbações
+    # Gráfico Inferior: Decomposição das Ações de Controle (P, I, D) e Perturbações
     ax2.set_facecolor('#FAFAFB')
-    ax2.plot(times, forces, label="Força de Controle (U)", color="#FF6B35", linewidth=1.5)
+    ax2.plot(times, forces, label="Esforço Total u(t)", color="#0D3B59", linewidth=2)
+    
+    if any(u != 0.0 for u in ups):
+        ax2.plot(times, ups, label="Ação P (u_p)", color="#FFB300", linewidth=1.2, linestyle=":")
+    if any(u != 0.0 for u in uis):
+        ax2.plot(times, uis, label="Ação I (u_i)", color="#00E676", linewidth=1.2, linestyle="--")
+    if any(u != 0.0 for u in uds):
+        ax2.plot(times, uds, label="Ação D (u_d)", color="#9C27B0", linewidth=1.2, linestyle="-.")
+        
     if any(d != 0.0 for d in disturbances):
-        ax2.plot(times, disturbances, label="Perturbação Externa", color="#D90429", linewidth=1.2, alpha=0.8)
-    ax2.set_ylabel("Força (N)")
+        ax2.plot(times, disturbances, label="Perturbação Externa", color="#EF4444", linewidth=1.2, alpha=0.8)
+        
+    ax2.set_ylabel("Força de Atuação (N)")
     ax2.set_xlabel("Tempo (s)")
     ax2.grid(True, linestyle=":", alpha=0.6, color="#CCCCCC")
-    ax2.legend(loc="upper right", framealpha=0.9, facecolor='#FFFFFF')
+    ax2.legend(loc="upper right", framealpha=0.9, facecolor='#FFFFFF', fontsize='small')
 
     plt.tight_layout()
     
@@ -62,49 +88,27 @@ def generate_chart(time_series: List[Dict[str, Any]], prev_time_series: List[Dic
     plt.close(fig)
     return img_buf
 
-def generate_error_chart(time_series: List[Dict[str, Any]]) -> io.BytesIO:
+def make_page_canvas(run_id: int):
     """
-    Gera gráficos da evolução do IAE, ISE e ITAE ao longo do tempo.
+    Retorna uma função de callback para desenhar o rodapé institucional em cada página.
     """
-    times = [p["time"] for p in time_series]
-    errors = [p["error"] for p in time_series]
-
-    iae_list = [0.0]
-    ise_list = [0.0]
-    itae_list = [0.0]
-    for i in range(1, len(times)):
-        dt = times[i] - times[i-1]
-        e = abs(errors[i])
-        iae_list.append(iae_list[-1] + e * dt)
-        ise_list.append(ise_list[-1] + (e * e) * dt)
-        itae_list.append(itae_list[-1] + times[i] * e * dt)
-
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 7), sharex=True)
-    fig.patch.set_facecolor('#FCFCFD')
-
-    ax1.set_facecolor('#FAFAFB')
-    ax1.plot(times, iae_list, color="#04A777", linewidth=2)
-    ax1.set_ylabel("IAE")
-    ax1.grid(True, linestyle=":", alpha=0.6, color="#CCCCCC")
-    ax1.set_title("Evolução do Erro Acumulado (IAE, ISE e ITAE)", fontsize=12, color="#0D3B59", fontweight="bold")
-
-    ax2.set_facecolor('#FAFAFB')
-    ax2.plot(times, ise_list, color="#D90429", linewidth=2)
-    ax2.set_ylabel("ISE")
-    ax2.grid(True, linestyle=":", alpha=0.6, color="#CCCCCC")
-
-    ax3.set_facecolor('#FAFAFB')
-    ax3.plot(times, itae_list, color="#1A6E8A", linewidth=2)
-    ax3.set_ylabel("ITAE")
-    ax3.set_xlabel("Tempo (s)")
-    ax3.grid(True, linestyle=":", alpha=0.6, color="#CCCCCC")
-
-    plt.tight_layout()
-    img_buf = io.BytesIO()
-    plt.savefig(img_buf, format="png", dpi=150, facecolor=fig.get_facecolor())
-    img_buf.seek(0)
-    plt.close(fig)
-    return img_buf
+    def page_decorator(canvas, doc):
+        canvas.saveState()
+        canvas.setFont("Helvetica", 8)
+        canvas.setFillColor(colors.HexColor("#64748B"))
+        
+        # Linha divisória sutil do rodapé
+        canvas.setStrokeColor(colors.HexColor("#E2E8F0"))
+        canvas.setLineWidth(0.5)
+        canvas.line(doc.leftMargin, 38, doc.pagesize[0] - doc.rightMargin, 38)
+        
+        # Textos esquerdo e direito do rodapé
+        canvas.drawString(doc.leftMargin, 25, "Simulador de Sistemas de Controle Dinâmico • Relatório PID")
+        page_str = f"Execução #{run_id} | Página {doc.page}"
+        canvas.drawRightString(doc.pagesize[0] - doc.rightMargin, 25, page_str)
+        
+        canvas.restoreState()
+    return page_decorator
 
 def generate_pdf_report(
     run_id: int,
@@ -118,36 +122,52 @@ def generate_pdf_report(
     prev_time_series: List[Dict[str, Any]] = None
 ) -> io.BytesIO:
     """
-    Gera o relatório profissional em formato PDF e retorna os bytes em um buffer de memória.
+    Gera o laudo técnico em PDF no formato A4, com 3 páginas estruturadas:
+    - Página 1: Cabeçalho, metadados da execução, 4 cards de métricas e índices de erro.
+    - Página 2: Título, telemetria gráfica temporal e tabela de elementos representados.
+    - Página 3: Implementação e código do algoritmo de controle executado pelo estudante.
     """
     pdf_buf = io.BytesIO()
     doc = SimpleDocTemplate(
         pdf_buf,
-        pagesize=letter,
-        rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40
+        pagesize=A4,
+        leftMargin=57,
+        rightMargin=57,
+        topMargin=45,
+        bottomMargin=45
     )
     
     styles = getSampleStyleSheet()
     
-    # Estilos customizados de tipografia
-    title_style = ParagraphStyle(
-        'DocTitle',
+    # Definição tipográfica moderna e consistente com o anexo de referência
+    page_title_style = ParagraphStyle(
+        'DocPageTitle',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=24,
-        leading=28,
+        fontSize=20,
+        leading=24,
         textColor=colors.HexColor('#0D3B59'),
-        spaceAfter=15
+        spaceAfter=2
     )
-    
+
+    page_sub_style = ParagraphStyle(
+        'DocPageSub',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=12,
+        textColor=colors.HexColor('#64748B'),
+        spaceAfter=14
+    )
+
     section_style = ParagraphStyle(
         'DocSection',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=14,
-        leading=18,
-        textColor=colors.HexColor('#1A6E8A'),
-        spaceBefore=15,
+        fontSize=13,
+        leading=16,
+        textColor=colors.HexColor('#008B8B'),
+        spaceBefore=14,
         spaceAfter=8,
         keepWithNext=True
     )
@@ -156,164 +176,251 @@ def generate_pdf_report(
         'DocBody',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=10,
+        fontSize=9,
+        leading=13,
+        textColor=colors.HexColor('#334155'),
+        spaceAfter=6
+    )
+
+    meta_cell_style = ParagraphStyle(
+        'MetaCell',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10.5,
         leading=14,
-        textColor=colors.HexColor('#333333'),
-        spaceAfter=8
+        textColor=colors.HexColor('#0F172A'),
+    )
+
+    card_cell_style = ParagraphStyle(
+        'CardCell',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=12,
+        textColor=colors.HexColor('#0F172A'),
     )
 
     code_style = ParagraphStyle(
         'DocCode',
         parent=styles['Normal'],
         fontName='Courier',
-        fontSize=9,
-        leading=12,
-        textColor=colors.HexColor('#222222'),
-    )
-
-    score_style = ParagraphStyle(
-        'DocScore',
-        parent=styles['Normal'],
-        fontName='Helvetica-Bold',
-        fontSize=18,
-        leading=22,
-        alignment=TA_CENTER,
-        textColor=colors.HexColor('#04A777') if score >= 70 else colors.HexColor('#D90429')
+        fontSize=8.5,
+        leading=12.5,
+        textColor=colors.HexColor('#1E293B'),
     )
 
     elements = []
 
-    # 1. Cabeçalho / Título do Relatório
-    elements.append(Paragraph("Relatório de Controle PID", title_style))
-    elements.append(Paragraph("Simulador de Sistemas de Controle Dinâmico - TCC", body_style))
-    elements.append(Spacer(1, 10))
+    # =========================================================================
+    # PÁGINA 1: DASHBOARD DE MÉTRICAS E METADADOS
+    # =========================================================================
+    elements.append(Paragraph("RELATÓRIO DE CONTROLE PID", page_title_style))
+    elements.append(Paragraph("SIMULADOR DE SISTEMAS DE CONTROLE DINÂMICO • RELATÓRIO TÉCNICO", page_sub_style))
+    elements.append(Spacer(1, 2))
 
-    # 2. Informações Gerais da Execução (Tabela de Metadados)
     formatted_date = created_at.strftime("%d/%m/%Y às %H:%M:%S")
     meta_data = [
         [
-            Paragraph("<b>Identificador da Run:</b>", body_style), Paragraph(f"#{run_id}", body_style),
-            Paragraph("<b>Data/Hora:</b>", body_style), Paragraph(formatted_date, body_style)
+            Paragraph('<font size="7.5" color="#64748B"><b>EXECUÇÃO</b></font><br/><font size="11" color="#0F172A"><b>#' + str(run_id) + '</b></font>', meta_cell_style),
+            Paragraph('<font size="7.5" color="#64748B"><b>DATA / HORA</b></font><br/><font size="10" color="#0F172A">' + formatted_date + '</font>', meta_cell_style)
         ],
         [
-            Paragraph("<b>Estudante:</b>", body_style), Paragraph(username, body_style),
-            Paragraph("<b>Fase / Cenário:</b>", body_style), Paragraph(level_name, body_style)
+            Paragraph('<font size="7.5" color="#64748B"><b>ESTUDANTE</b></font><br/><font size="10" color="#0F172A">' + username + '</font>', meta_cell_style),
+            Paragraph('<font size="7.5" color="#64748B"><b>FASE / CENÁRIO</b></font><br/><font size="10" color="#0F172A">' + level_name + '</font>', meta_cell_style)
         ]
     ]
-    meta_table = Table(meta_data, colWidths=[120, 150, 100, 160])
+    meta_table = Table(meta_data, colWidths=[240.6, 240.6])
     meta_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F4F7F9')),
-        ('PADDING', (0,0), (-1,-1), 8),
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F0F7FF')),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#CCE2F5')),
+        ('TOPPADDING', (0,0), (-1,-1), 9),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 9),
+        ('LEFTPADDING', (0,0), (-1,-1), 12),
+        ('RIGHTPADDING', (0,0), (-1,-1), 12),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ('LINEBELOW', (0,-1), (-1,-1), 1.5, colors.HexColor('#1A6E8A')),
     ]))
     elements.append(meta_table)
-    elements.append(Spacer(1, 15))
+    elements.append(Spacer(1, 14))
 
-    # 3. Métricas de Desempenho
-    elements.append(Paragraph("Métricas de Desempenho e Controle", section_style))
+    # Métricas de Desempenho e Controle
+    elements.append(Paragraph("Métricas de desempenho e controle", section_style))
     
-    rise_val = f"{metrics.get('rise_time'):.2f}s" if metrics.get('rise_time') else "Não atingiu"
-    settle_val = f"{metrics.get('settling_time'):.2f}s" if metrics.get('settling_time') else "Não estabilizou"
-    overshoot_val = f"{metrics.get('overshoot'):.1f}%"
-    err_val = f"{abs(metrics.get('final_error')):.2f} m"
+    rise_val = f"{format_pt_br(metrics.get('rise_time'), 2)} s" if metrics.get('rise_time') is not None else "Não atingiu"
+    overshoot_val = f"{format_pt_br(metrics.get('overshoot'), 1)}%" if metrics.get('overshoot') is not None else "--"
+    settle_val = f"{format_pt_br(metrics.get('settling_time'), 2)} s" if metrics.get('settling_time') is not None else "Não estabilizou"
+    err_val = f"{format_pt_br(abs(metrics.get('final_error')), 2)} m" if metrics.get('final_error') is not None else "--"
 
-    metrics_data = [
-        ["Tempo de Subida", "Overshoot", "Tempo de Acomodação", "Erro Final", "Pontuação Final"],
-        [rise_val, overshoot_val, settle_val, err_val, Paragraph(f"{score:.1f} / 100", score_style)]
+    card1_html = f'<font size="7.5" color="#64748B"><b>TEMPO DE SUBIDA (TR)</b></font><br/><br/><font size="18" color="#0F172A"><b>{rise_val}</b></font><br/><font size="7.5" color="#94A3B8">tr</font>'
+    card2_html = f'<font size="7.5" color="#64748B"><b>SOBRESSINAL (MP)</b></font><br/><br/><font size="18" color="#0F172A"><b>{overshoot_val}</b></font><br/><font size="7.5" color="#94A3B8">Mp</font>'
+    card3_html = f'<font size="7.5" color="#64748B"><b>TEMPO DE ACOMODAÇÃO (TS)</b></font><br/><br/><font size="18" color="#0F172A"><b>{settle_val}</b></font><br/><font size="7.5" color="#94A3B8">ts</font>'
+    card4_html = f'<font size="7.5" color="#64748B"><b>ERRO FINAL (ESS)</b></font><br/><br/><font size="18" color="#0F172A"><b>{err_val}</b></font><br/><font size="7.5" color="#94A3B8">ess</font>'
+
+    cards_data = [
+        [Paragraph(card1_html, card_cell_style), '', Paragraph(card2_html, card_cell_style)],
+        ['', '', ''],
+        [Paragraph(card3_html, card_cell_style), '', Paragraph(card4_html, card_cell_style)]
     ]
-    
-    metrics_table = Table(metrics_data, colWidths=[120, 120, 120, 70, 100])
-    metrics_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0D3B59')),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('PADDING', (0,0), (-1,-1), 8),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 9),
-        ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#FAFAFB')),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+    cards_table = Table(cards_data, colWidths=[235.6, 10, 235.6], rowHeights=[74, 10, 74])
+    cards_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (0,0), colors.HexColor('#FFFFFF')),
+        ('BOX', (0,0), (0,0), 1, colors.HexColor('#E2E8F0')),
+        ('TOPPADDING', (0,0), (0,0), 9),
+        ('BOTTOMPADDING', (0,0), (0,0), 9),
+        ('LEFTPADDING', (0,0), (0,0), 12),
+        ('RIGHTPADDING', (0,0), (0,0), 12),
+
+        ('BACKGROUND', (2,0), (2,0), colors.HexColor('#FFFFFF')),
+        ('BOX', (2,0), (2,0), 1, colors.HexColor('#E2E8F0')),
+        ('TOPPADDING', (2,0), (2,0), 9),
+        ('BOTTOMPADDING', (2,0), (2,0), 9),
+        ('LEFTPADDING', (2,0), (2,0), 12),
+        ('RIGHTPADDING', (2,0), (2,0), 12),
+
+        ('BACKGROUND', (0,2), (0,2), colors.HexColor('#FFFFFF')),
+        ('BOX', (0,2), (0,2), 1, colors.HexColor('#E2E8F0')),
+        ('TOPPADDING', (0,2), (0,2), 9),
+        ('BOTTOMPADDING', (0,2), (0,2), 9),
+        ('LEFTPADDING', (0,2), (0,2), 12),
+        ('RIGHTPADDING', (0,2), (0,2), 12),
+
+        ('BACKGROUND', (2,2), (2,2), colors.HexColor('#FFFFFF')),
+        ('BOX', (2,2), (2,2), 1, colors.HexColor('#E2E8F0')),
+        ('TOPPADDING', (2,2), (2,2), 9),
+        ('BOTTOMPADDING', (2,2), (2,2), 9),
+        ('LEFTPADDING', (2,2), (2,2), 12),
+        ('RIGHTPADDING', (2,2), (2,2), 12),
+
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
-    elements.append(metrics_table)
-    elements.append(Spacer(1, 10))
+    elements.append(cards_table)
+    elements.append(Spacer(1, 14))
 
-    iae_val = f"{metrics.get('iae'):.2f}" if metrics.get('iae') is not None else "--"
-    ise_val = f"{metrics.get('ise'):.2f}" if metrics.get('ise') is not None else "--"
-    itae_val = f"{metrics.get('itae'):.2f}" if metrics.get('itae') is not None else "--"
+    # Índices Acumulados de Erro
+    elements.append(Paragraph("Índices acumulados de erro", section_style))
+    iae_str = format_pt_br(metrics.get('iae'), 2)
+    ise_str = format_pt_br(metrics.get('ise'), 2)
+    itae_str = format_pt_br(metrics.get('itae'), 2)
 
-    integral_metrics_data = [
-        ["IAE (Erro Absoluto)", "ISE (Erro Quadrático)", "ITAE (Erro x Tempo)"],
-        [iae_val, ise_val, itae_val]
+    indices_data = [
+        [
+            Paragraph('<font size="7.5" color="#64748B">IAE · Erro absoluto integral</font>', card_cell_style),
+            Paragraph('<font size="7.5" color="#64748B">ISE · Erro quadrático integral</font>', card_cell_style),
+            Paragraph('<font size="7.5" color="#64748B">ITAE · Erro × tempo</font>', card_cell_style),
+        ],
+        [
+            Paragraph(f'<font size="16" color="#0F172A"><b>{iae_str}</b></font>', card_cell_style),
+            Paragraph(f'<font size="16" color="#0F172A"><b>{ise_str}</b></font>', card_cell_style),
+            Paragraph(f'<font size="16" color="#0F172A"><b>{itae_str}</b></font>', card_cell_style),
+        ]
     ]
-
-    integral_table = Table(integral_metrics_data, colWidths=[176, 177, 177])
-    integral_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1A6E8A')),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('PADDING', (0,0), (-1,-1), 8),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 9),
-        ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#F4F7F9')),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-    ]))
-    elements.append(integral_table)
-    elements.append(Spacer(1, 15))
-
-    # Diagnóstico Automático
-    elements.append(Paragraph("Diagnóstico Pedagógico do Controlador", section_style))
-    diagnosis_text = generate_diagnosis(metrics, score)
-    
-    diagnosis_table = Table([[Paragraph(diagnosis_text, body_style)]], colWidths=[530])
-    diagnosis_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F4F7F9')),
-        ('PADDING', (0,0), (-1,-1), 12),
-        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#1A6E8A')),
+    indices_table = Table(indices_data, colWidths=[160.4, 160.4, 160.4])
+    indices_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#FFFFFF')),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#E2E8F0')),
+        ('LINEBELOW', (0,0), (-1,0), 0.5, colors.HexColor('#E2E8F0')),
+        ('LINEAFTER', (0,0), (0,1), 0.5, colors.HexColor('#E2E8F0')),
+        ('LINEAFTER', (1,0), (1,1), 0.5, colors.HexColor('#E2E8F0')),
+        ('TOPPADDING', (0,0), (-1,-1), 9),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 9),
+        ('LEFTPADDING', (0,0), (-1,-1), 12),
+        ('RIGHTPADDING', (0,0), (-1,-1), 12),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
-    elements.append(diagnosis_table)
-    elements.append(Spacer(1, 15))
+    elements.append(indices_table)
 
-    # 4. Gráfico de Resposta Temporal (Gerado com matplotlib)
-    elements.append(Paragraph("Gráficos de Comportamento Dinâmico", section_style))
+    # Quebra para Página 2
+    elements.append(PageBreak())
+
+    # =========================================================================
+    # PÁGINA 2: GRÁFICOS DE COMPORTAMENTO DINÂMICO E TELEMETRIA
+    # =========================================================================
+    elements.append(Paragraph("GRÁFICOS DE COMPORTAMENTO DINÂMICO", page_title_style))
+    elements.append(Paragraph("Resposta do veículo, referência, erro e esforço de atuação ao longo da simulação.", page_sub_style))
+    elements.append(Spacer(1, 2))
+
+    elements.append(Paragraph("Resposta temporal e telemetria PID", section_style))
     chart_buf = generate_chart(time_series, prev_time_series)
-    chart_image = Image(chart_buf, width=480, height=360)
+    chart_image = Image(chart_buf, width=481, height=312)
     chart_image.hAlign = 'CENTER'
     elements.append(chart_image)
-    elements.append(Spacer(1, 15))
-    
-    # Gráficos das Métricas Integrais
-    error_chart_buf = generate_error_chart(time_series)
-    error_chart_image = Image(error_chart_buf, width=480, height=420)
-    error_chart_image.hAlign = 'CENTER'
-    elements.append(error_chart_image)
-    elements.append(Spacer(1, 15))
+    elements.append(Spacer(1, 14))
 
-    # 5. Código do Algoritmo PID do Usuário (KeepTogether para evitar quebra de página)
-    code_elements = [
-        Paragraph("Algoritmo de Controle Implementado", section_style),
-        Paragraph("Trecho de código JavaScript executado na malha de feedback da simulação:", body_style),
-        Spacer(1, 4)
+    elements.append(Paragraph("Elementos representados", section_style))
+    elem_bold_style = ParagraphStyle(
+        'ElemBold',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=8.5,
+        leading=12,
+        textColor=colors.HexColor('#0D3B59'),
+    )
+    elem_text_style = ParagraphStyle(
+        'ElemText',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=12,
+        textColor=colors.HexColor('#334155'),
+    )
+    elem_data = [
+        [Paragraph("Posição y(t)", elem_bold_style), Paragraph("Posição do veículo ao longo do tempo.", elem_text_style)],
+        [Paragraph("Meta r(t)", elem_bold_style), Paragraph("Referência definida para o cenário.", elem_text_style)],
+        [Paragraph("Erro e(t)", elem_bold_style), Paragraph("Diferença entre referência e posição.", elem_text_style)],
+        [Paragraph("Esforço u(t)", elem_bold_style), Paragraph("Força total e componentes P, I e D.", elem_text_style)],
     ]
-    
-    # Formata as linhas de código
-    escaped_code = code_snippet.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br/>")
+    elem_table = Table(elem_data, colWidths=[120, 361])
+    elem_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+        ('ROWBACKGROUNDS', (0,0), (-1,-1), [colors.HexColor('#F8FAFC'), colors.HexColor('#FFFFFF')]),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('LEFTPADDING', (0,0), (-1,-1), 10),
+        ('RIGHTPADDING', (0,0), (-1,-1), 10),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    elements.append(elem_table)
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph('<font size="8" color="#64748B">Os gráficos foram preservados do relatório original, sem recalcular ou alterar as curvas.</font>', body_style))
+
+    # Quebra para Página 3
+    elements.append(PageBreak())
+
+    # =========================================================================
+    # PÁGINA 3: ALGORITMO DE CONTROLE IMPLEMENTADO
+    # =========================================================================
+    elements.append(Paragraph("ALGORITMO DE CONTROLE IMPLEMENTADO", page_title_style))
+    elements.append(Paragraph("Código JavaScript executado na malha de feedback da simulação.", page_sub_style))
+    elements.append(Spacer(1, 4))
+
+    elements.append(Paragraph("Algoritmo de controle implementado", section_style))
+    elements.append(Paragraph("Trecho de código JavaScript executado na malha de feedback da simulação:", body_style))
+    elements.append(Spacer(1, 6))
+
+    # Formatação do código com escape de entidades HTML
+    escaped_code = (
+        code_snippet.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace(" ", "&nbsp;")
+        .replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;")
+        .replace("\n", "<br/>")
+    )
     code_para = Paragraph(escaped_code, code_style)
-    
-    code_table = Table([[code_para]], colWidths=[530])
+    code_table = Table([[code_para]], colWidths=[481])
     code_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
-        ('PADDING', (0,0), (-1,-1), 10),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#CBD5E1')),
+        ('TOPPADDING', (0,0), (-1,-1), 12),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 12),
+        ('LEFTPADDING', (0,0), (-1,-1), 14),
+        ('RIGHTPADDING', (0,0), (-1,-1), 14),
     ]))
-    code_elements.append(code_table)
-    
-    elements.append(KeepTogether(code_elements))
+    elements.append(code_table)
 
-    doc.build(elements)
+    doc.build(
+        elements,
+        onFirstPage=make_page_canvas(run_id),
+        onLaterPages=make_page_canvas(run_id),
+    )
     pdf_buf.seek(0)
     return pdf_buf

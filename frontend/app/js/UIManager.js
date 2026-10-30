@@ -5,11 +5,20 @@
 */
 
 // Detecta se está rodando localmente ou em produção
-const API_BASE_URL =
+const isLocalEnv =
   window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1"
-    ? "http://localhost:8081"
-    : "https://sketch-1-backend.onrender.com";
+  window.location.hostname === "127.0.0.1" ||
+  window.location.hostname === "0.0.0.0" ||
+  window.location.hostname === "" ||
+  window.location.hostname.endsWith(".local") ||
+  window.location.hostname.startsWith("192.168.") ||
+  window.location.hostname.startsWith("10.") ||
+  window.location.hostname.startsWith("172.");
+
+const API_BASE_URL = isLocalEnv
+  ? `http://${window.location.hostname === "0.0.0.0" || !window.location.hostname ? "localhost" : window.location.hostname}:8081`
+  : "https://sketch-1-backend.onrender.com";
+
 
 window.UIManager = {
   init: function () {
@@ -63,17 +72,8 @@ window.UIManager = {
       btn.addEventListener("click", () => selectTab(btn.dataset.tab));
     });
 
-    document.getElementById("rail-btn-ranking")?.addEventListener("click", () => {
-      selectTab("metrics");
-    });
     document.getElementById("rail-btn-learn")?.addEventListener("click", () => {
-      document.getElementById("btn-open-tuning")?.click();
-    });
-    document.getElementById("rail-btn-settings")?.addEventListener("click", () => {
-      document.getElementById("btn-open-tuning")?.click();
-    });
-    document.getElementById("rail-btn-help")?.addEventListener("click", () => {
-      this.showOnboarding();
+      selectTab("learn");
     });
 
     // Botão Simular / Pausa
@@ -178,22 +178,29 @@ window.UIManager = {
       });
     }
 
-    // Modal - Salvar Localmente
-    const btnSaveOnly = document.getElementById("modal-btn-save-only");
-    if (btnSaveOnly) {
-      btnSaveOnly.addEventListener("click", () => {
+    // Modal - Fechar no (X)
+    const btnCloseModal = document.getElementById("modal-btn-close");
+    if (btnCloseModal) {
+      btnCloseModal.addEventListener("click", () => {
         this.hideResultModal();
-        if (this._modalPendingPayload) {
-          this.saveRunLocal(this._modalPendingPayload);
+      });
+    }
+
+    // Modal - Fechar ao clicar no overlay de fundo
+    const resultModal = document.getElementById("result-modal");
+    if (resultModal) {
+      resultModal.addEventListener("click", (e) => {
+        if (e.target === resultModal) {
+          this.hideResultModal();
         }
       });
     }
 
-    // Modal - Salvar e Gerar Relatório
+    // Modal - Gerar Relatório
     const btnSaveReport = document.getElementById("modal-btn-save-report");
+    const usernameInput = document.getElementById("modal-username");
     if (btnSaveReport) {
       btnSaveReport.addEventListener("click", () => {
-        const usernameInput = document.getElementById("modal-username");
         let username = usernameInput ? usernameInput.value.trim() : "";
         if (!username) username = "Anônimo";
 
@@ -205,44 +212,21 @@ window.UIManager = {
       });
     }
 
-    // Inicializa Leaderboard
-    this.updateLeaderboardUI();
-
-    // Login/Historico Button
-    const loginBtn = document.getElementById("login-btn");
-    const loginModal = document.getElementById("login-modal");
-    const loginConfirmBtn = document.getElementById("login-confirm-btn");
-    const loginCancelBtn = document.getElementById("login-cancel-btn");
-    const loginInput = document.getElementById("login-username-input");
-
-    if (loginBtn && loginModal) {
-      loginBtn.addEventListener("click", () => {
-        loginModal.style.display = "flex";
-        if (loginInput) loginInput.focus();
+    if (usernameInput && btnSaveReport) {
+      usernameInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          btnSaveReport.click();
+        }
       });
-
-      if (loginCancelBtn) {
-        loginCancelBtn.addEventListener("click", () => {
-          loginModal.style.display = "none";
-        });
-      }
-
-      if (loginConfirmBtn && loginInput) {
-        loginConfirmBtn.addEventListener("click", () => {
-          const username = loginInput.value;
-          if (username && username.trim() !== "") {
-            this.loginUser(username.trim());
-            loginModal.style.display = "none";
-          }
-        });
-        // Permitir 'Enter' no input
-        loginInput.addEventListener("keypress", (e) => {
-          if (e.key === "Enter") {
-            loginConfirmBtn.click();
-          }
-        });
-      }
     }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        this.hideResultModal();
+      }
+    });
+
+
 
     // Quiz
     document.querySelectorAll(".quiz-btn").forEach((btn) => {
@@ -298,25 +282,61 @@ window.UIManager = {
       }
     });
 
-    // Assistente de Sintonia Clássica
-    const btnTuning = document.getElementById("btn-open-tuning");
-    const btnCloseTuning = document.getElementById("tuning-close-btn");
-    if (btnTuning) {
-      btnTuning.addEventListener("click", () => {
-        if (window.TuningAssistant) window.TuningAssistant.openModal();
+    // Interruptor Interativo de Anti-Windup (Clamping vs Windup Real)
+    const btnAntiWindup = document.getElementById("btn-toggle-antiwindup");
+    const chkAntiWindupChart = document.getElementById("chk-antiwindup-chart");
+
+    const iconShield = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`;
+    const iconAlert = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+
+    const updateAntiWindupUI = (enabled) => {
+      window.SIM_STATE.enableAntiWindup = enabled;
+      if (btnAntiWindup) {
+        if (enabled) {
+          btnAntiWindup.innerHTML = `${iconShield}<span>Anti-Windup: ON</span>`;
+          btnAntiWindup.style.background = "rgba(0, 230, 118, 0.15)";
+          btnAntiWindup.style.borderColor = "#00E676";
+          btnAntiWindup.style.color = "#00E676";
+          btnAntiWindup.title = "Anti-Windup ATIVO (Clamping limita a integral para evitar sobressinal). Clique para desligar e ver o Integrator Windup.";
+        } else {
+          btnAntiWindup.innerHTML = `${iconAlert}<span>Anti-Windup: OFF</span>`;
+          btnAntiWindup.style.background = "rgba(239, 68, 68, 0.2)";
+          btnAntiWindup.style.borderColor = "#EF4444";
+          btnAntiWindup.style.color = "#EF4444";
+          btnAntiWindup.title = "Anti-Windup DESATIVADO (Integral acumula livremente sob saturação -> causa overshoot maciço). Clique para reativar o Clamping.";
+        }
+      }
+      if (chkAntiWindupChart) {
+        chkAntiWindupChart.checked = enabled;
+        const span = chkAntiWindupChart.parentElement.querySelector("span");
+        if (span) {
+          span.style.color = enabled ? "#00E676" : "#EF4444";
+          span.textContent = enabled ? "Anti-Windup" : "Anti-Windup (OFF)";
+        }
+      }
+      const chkAntiWindupFlt = document.getElementById("chk-antiwindup-flt");
+      if (chkAntiWindupFlt) {
+        chkAntiWindupFlt.checked = enabled;
+        const spanFlt = chkAntiWindupFlt.parentElement.querySelector("span");
+        if (spanFlt) {
+          spanFlt.style.color = enabled ? "#00E676" : "#EF4444";
+          spanFlt.textContent = enabled ? "Anti-Windup" : "Anti-Windup (OFF)";
+        }
+      }
+    };
+
+    if (btnAntiWindup) {
+      btnAntiWindup.addEventListener("click", () => {
+        const nextState = !window.SIM_STATE.enableAntiWindup;
+        updateAntiWindupUI(nextState);
       });
     }
-    if (btnCloseTuning) {
-      btnCloseTuning.addEventListener("click", () => {
-        if (window.TuningAssistant) window.TuningAssistant.closeModal();
+
+    if (chkAntiWindupChart) {
+      chkAntiWindupChart.addEventListener("change", (e) => {
+        updateAntiWindupUI(e.target.checked);
       });
     }
-    document.querySelectorAll(".btn-apply-tuning").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const type = e.target.dataset.tuningType;
-        if (window.TuningAssistant) window.TuningAssistant.applyTuning(type);
-      });
-    });
   },
 
   loginUser: function (username) {
@@ -426,6 +446,7 @@ window.UIManager = {
 
   updateDisturbance: function (disturbance) {
     const lvl = window.SIM_STATE ? window.SIM_STATE.currentLevel : 1;
+    const terrainMode = (window.SIM_STATE && window.SIM_STATE.terrainMode) || (window.Scene3D && window.Scene3D.currentTerrainMode) || 'flat';
     const panel = document.getElementById("disturbance-panel");
     const valEl = document.getElementById("disturbance-value");
     const barEl = document.getElementById("disturbance-bar");
@@ -433,15 +454,16 @@ window.UIManager = {
 
     if (!panel) return;
 
-    // Só mostra nas fases com perturbação
-    panel.style.display = lvl >= 2 ? "block" : "none";
-    if (lvl < 2) return;
+    // Mostra nas fases com perturbação externa ou quando em relevo não-plano
+    const hasDisturbance = lvl >= 2 || (terrainMode !== 'flat' && Math.abs(disturbance) > 0.05);
+    panel.style.display = hasDisturbance ? "block" : "none";
+    if (!hasDisturbance) return;
 
-    if (valEl) valEl.textContent = disturbance.toFixed(1) + " N";
+    if (valEl) valEl.textContent = (disturbance >= 0 ? "+" : "") + disturbance.toFixed(1) + " N";
 
     // Barra visual de perturbação (-/+ centralizada)
     if (barEl) {
-      const maxForce = lvl === 2 ? 100 : 1500; // escala por fase
+      const maxForce = (lvl === 1) ? 200 : (lvl === 2 ? 100 : 1500); // escala por fase/relevo
       const pct = Math.min(100, (Math.abs(disturbance) / maxForce) * 100);
       barEl.style.width = pct + "%";
       barEl.style.background =
@@ -450,7 +472,12 @@ window.UIManager = {
     }
 
     if (descEl) {
-      if (lvl === 2) {
+      if (lvl === 1) {
+        const abs = Math.abs(disturbance);
+        if (abs < 5) descEl.textContent = "Pista nivelada";
+        else if (disturbance < 0) descEl.textContent = "Força gravitacional de aclive (resistência)";
+        else descEl.textContent = "Força gravitacional de declive (aceleração)";
+      } else if (lvl === 2) {
         const abs = Math.abs(disturbance);
         if (abs < 5) descEl.textContent = "Vento calmo";
         else if (abs < 30) descEl.textContent = "Vento moderado";
@@ -522,16 +549,23 @@ window.UIManager = {
     historyBody.innerHTML = "";
 
     window.SIM_STATE.runHistory.forEach((run) => {
+      const isLocal = Boolean(
+        run.isLocal ||
+        (typeof run.id === "string" && run.id.startsWith("local_"))
+      );
       const row = document.createElement("tr");
       const riseTimeText = run.riseTime ? run.riseTime.toFixed(2) + "s" : "--";
-      const overshootText = run.overshoot.toFixed(1) + "%";
-      const settlingTimeText = run.settlingTime.toFixed(2) + "s";
-      const finalErrorText = Math.abs(run.finalError).toFixed(2);
+      const overshootText = (run.overshoot !== undefined && run.overshoot !== null)
+        ? run.overshoot.toFixed(1) + "%"
+        : "--";
+      const settlingTimeText = run.settlingTime ? run.settlingTime.toFixed(2) + "s" : "--";
+      const finalErrorText = (run.finalError !== undefined && run.finalError !== null)
+        ? Math.abs(run.finalError).toFixed(2)
+        : "--";
 
-      const isLocal = typeof run.id === "string" && run.id.startsWith("local_");
-      const scoreText = isLocal
-        ? "--"
-        : `<strong>${run.score.toFixed(1)}</strong>`;
+      const scoreText = (run.score !== undefined && run.score !== null)
+        ? `<strong>${Number(run.score).toFixed(1)}</strong>`
+        : "--";
 
       const actionHtml = isLocal
         ? '<span style="color: #94a3b8; font-size: 0.9em;">Indisponível (Local)</span>'
@@ -557,60 +591,58 @@ window.UIManager = {
 
   _modalPendingPayload: null,
 
+  _calculateScore: function (payload) {
+    const sp = Math.abs(window.SIM_STATE ? window.SIM_STATE.setPoint : 600) || 600;
+    // Limiares físicos compatíveis com o TCC (para 600m: maxRise=7.0s, maxSettle=15.0s)
+    const maxRise = Math.max(3.0, 0.01 * sp + 1.0);
+    const maxSettle = Math.max(5.0, 0.02 * sp + 3.0);
+
+    let score = 100.0;
+
+    // 1. Dedução de Erro Final
+    if (payload.final_error !== undefined && payload.final_error !== null) {
+      score -= Math.abs(payload.final_error) * 6.0;
+    }
+
+    // 2. Dedução de Overshoot (tolerância de 5% para o carro)
+    if (payload.overshoot > 5.0) {
+      score -= (payload.overshoot - 5.0) * 1.5;
+    }
+
+    // 3. Dedução de Tempo de Subida
+    if (payload.rise_time !== null && payload.rise_time !== undefined) {
+      if (payload.rise_time > maxRise) {
+        score -= (payload.rise_time - maxRise) * 2.0;
+      }
+    } else {
+      score -= 30.0;
+    }
+
+    // 4. Dedução de Tempo de Acomodação
+    if (payload.settling_time !== null && payload.settling_time !== undefined) {
+      if (payload.settling_time > maxSettle) {
+        score -= (payload.settling_time - maxSettle) * 2.5;
+      }
+    } else {
+      score -= 40.0;
+    }
+
+    return Math.max(0.0, Math.min(100.0, Math.round(score * 10) / 10));
+  },
+
   showResultModal: function (payload) {
     this._modalPendingPayload = payload;
     const modal = document.getElementById("result-modal");
     if (modal) {
       modal.style.display = "flex";
 
-      // Simular o cálculo do score localmente para exibir uma prévia no modal
-      let simulatedScore = 100;
-      if (payload.overshoot > 5) simulatedScore -= payload.overshoot * 0.5;
-      if (payload.settling_time > 5)
-        simulatedScore -= payload.settling_time * 2;
-      simulatedScore = Math.max(0, Math.min(100, simulatedScore));
-
-      const scoreEl = document.getElementById("modal-score-value");
-      if (scoreEl) scoreEl.innerText = simulatedScore.toFixed(1) + "/100";
-
-      // Pre-fill username if logged in
-      if (window.SIM_STATE && window.SIM_STATE.currentUser) {
-        const usernameInput = document.getElementById("modal-username");
-        if (usernameInput) {
+      // Preenche o nome se já estiver logado
+      const usernameInput = document.getElementById("modal-username");
+      if (usernameInput) {
+        if (window.SIM_STATE && window.SIM_STATE.currentUser) {
           usernameInput.value = window.SIM_STATE.currentUser;
         }
-      }
-
-      // Verifica Desafio
-      let challengeMsg = "";
-      const lvlObj =
-        window.LevelManager && window.SIM_STATE
-            ? window.LevelManager.levels[window.SIM_STATE.currentLevel]
-          : null;
-      if (lvlObj && lvlObj.challenge) {
-        const passed = lvlObj.challenge.check(payload);
-        if (passed) {
-          challengeMsg =
-            "<div style='color:var(--success, #10B981); font-weight:bold; margin-top:10px; font-size:1.1em; display:flex; align-items:center; gap:6px;'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'></polyline></svg> " +
-            lvlObj.challenge.text +
-            " CONCLUÍDO!</div>";
-        } else {
-          challengeMsg =
-            "<div style='color:var(--warning, #F59E0B); margin-top:10px; display:flex; align-items:center; gap:6px;'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><line x1='18' y1='6' x2='6' y2='18'></line><line x1='6' y1='6' x2='18' y2='18'></line></svg> Desafio não atingido desta vez. Tente novamente!</div>";
-        }
-      }
-
-      // Injetar a msg do desafio antes do texto
-      let textEl = modal.querySelector(".modal-text");
-      let existingChallengeMsg = document.getElementById("modal-challenge-msg");
-      if (existingChallengeMsg) existingChallengeMsg.remove();
-
-      if (challengeMsg && textEl) {
-        const div = document.createElement("div");
-        div.id = "modal-challenge-msg";
-        div.innerHTML = challengeMsg;
-        div.style.marginBottom = "15px";
-        textEl.parentNode.insertBefore(div, textEl);
+        setTimeout(() => usernameInput.focus(), 80);
       }
     }
   },
@@ -621,15 +653,17 @@ window.UIManager = {
   },
 
   saveRunLocal: function (payload) {
+    const calculatedScore = this._calculateScore ? this._calculateScore(payload) : 100.0;
     const runData = {
       id: `local_${window.SIM_STATE.runHistory.length + 1}`,
-      score: 0,
+      score: calculatedScore,
       level: payload.level_name,
       riseTime: payload.rise_time,
       overshoot: payload.overshoot,
       settlingTime: payload.settling_time,
       finalError: payload.final_error,
       codeSnippet: payload.code_snippet,
+      isLocal: true,
     };
     window.SIM_STATE.runHistory.push(runData);
     this.updateHistoryUI();
@@ -655,16 +689,21 @@ window.UIManager = {
           settlingTime: payload.settling_time,
           finalError: payload.final_error,
           codeSnippet: payload.code_snippet,
+          isLocal: false,
         };
         window.SIM_STATE.runHistory.push(runData);
         this.updateHistoryUI();
-        this.updateLeaderboardUI();
 
-        // Dispara o download automático do PDF
-        window.location.href = `${API_BASE_URL}/api/v1/runs/${data.id}/report`;
+        // Dispara o download automático do PDF sem descarregar a página
+        const downloadLink = document.createElement("a");
+        downloadLink.href = `${API_BASE_URL}/api/v1/runs/${data.id}/report`;
+        downloadLink.download = `relatorio_run_${data.id}.pdf`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
       })
       .catch((err) => {
-        console.error(err);
+        console.error("Erro na comunicação com o backend:", err);
         alert(
           "Falha na conexão com o backend. A rodada será salva localmente.",
         );
@@ -673,34 +712,6 @@ window.UIManager = {
   },
 
   updateLeaderboardUI: function () {
-    fetch(`${API_BASE_URL}/api/v1/runs/leaderboard`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Leaderboard falhou");
-        return res.json();
-      })
-      .then((data) => {
-        const lbBody = document.getElementById("leaderboard-body");
-        if (!lbBody) return;
-        lbBody.innerHTML = "";
-
-        data.forEach((entry, index) => {
-          const row = document.createElement("tr");
-          let posMedal = `${index + 1}º`;
-
-          const dateStr = new Date(entry.created_at).toLocaleDateString(
-            "pt-BR",
-          );
-
-          row.innerHTML = `
-                <td><strong>${posMedal}</strong></td>
-                <td>${entry.username}</td>
-                <td><span class="run-level-badge">${entry.level_name}</span></td>
-                <td><strong>${entry.score.toFixed(1)}</strong></td>
-                <td>${dateStr}</td>
-            `;
-          lbBody.appendChild(row);
-        });
-      })
-      .catch((err) => console.error("Erro ao carregar leaderboard:", err));
+    // Leaderboard desativado
   },
 };

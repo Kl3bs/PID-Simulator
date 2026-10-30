@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 def calculate_run_score(
     level_name: str,
     rise_time: float | None,
     overshoot: float,
     settling_time: float | None,
-    final_error: float
+    final_error: float,
+    setpoint: float = 600.0
 ) -> float:
     """
     Calcula uma pontuação de 0 a 100 para o desempenho do PID do aluno.
@@ -23,7 +26,7 @@ def calculate_run_score(
     # 2. Dedução de Overshoot (Ultrapassagem)
     # Algum overshoot é tolerável, mas excessivo é ruim
     if "1" in level_name or "Carro" in level_name:
-        # Carro: tolerância muito baixa de overshoot
+        # Carro: tolerância didática de 5% de overshoot
         if overshoot > 5.0:
             score -= (overshoot - 5.0) * 1.5
     elif "2" in level_name or "Drone" in level_name:
@@ -36,19 +39,21 @@ def calculate_run_score(
             score -= (overshoot - 25.0) * 0.8
 
     # 3. Dedução de Tempo de Subida (Rapidez do sistema)
+    # Limiar baseado na dinâmica física: proporcional ao setpoint (Tabela 4.2 do TCC tr=5.7s para 600m)
+    max_rise = max(3.0, 0.01 * setpoint + 1.0)
     if rise_time is not None:
-        # Penaliza tempos de subida acima de 3 segundos
-        if rise_time > 3.0:
-            score -= (rise_time - 3.0) * 2.0
+        if rise_time > max_rise:
+            score -= (rise_time - max_rise) * 2.0
     else:
         # Se nunca subiu (sistema muito lento ou instável)
         score -= 30.0
 
     # 4. Dedução de Tempo de Acomodação (Estabilidade)
+    # Limiar baseado na dinâmica física do TCC: para 600m, ts ideal <= 15.0s (TCC ts=14.2s)
+    max_settle = max(5.0, 0.02 * setpoint + 3.0)
     if settling_time is not None:
-        # Penaliza tempos de acomodação acima de 5 segundos
-        if settling_time > 5.0:
-            score -= (settling_time - 5.0) * 2.5
+        if settling_time > max_settle:
+            score -= (settling_time - max_settle) * 2.5
     else:
         # Se não acomodou
         score -= 40.0

@@ -1144,6 +1144,280 @@ body {
     margin-left: 3px;
 }
 
+.chart-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.time-horizon-selector {
+    display: inline-flex;
+    align-items: center;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px 4px;
+    gap: 2px;
+}
+
+.horizon-label {
+    font-size: 0.68em;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-right: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-time-window {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.70em;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-time-window:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.btn-time-window.active {
+    background: var(--accent);
+    color: #141414;
+    font-weight: 700;
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.btn-chart-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 9px;
+    font-size: 0.72em;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-chart-tool:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-accent);
+}
+
+.btn-chart-tool.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.toggle-item.signal-band span {
+    color: #FF5252;
+}
+
+/* ========================================================
+   FLOATING RESIZABLE CHART WINDOW (JANELA FLUTUANTE)
+   ======================================================== */
+.floating-chart-window {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 820px;
+    height: 490px;
+    min-width: 520px;
+    min-height: 360px;
+    max-width: calc(100vw - 30px);
+    max-height: calc(100vh - 30px);
+    background: rgba(28, 28, 28, 0.94);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(249, 115, 22, 0.12);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    resize: both;
+    overflow: hidden;
+    animation: floatingWindowFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes floatingWindowFadeIn {
+    from { opacity: 0; transform: scale(0.96) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.floating-chart-window.maximized {
+    top: 15px !important;
+    left: 15px !important;
+    bottom: auto !important;
+    right: auto !important;
+    width: calc(100vw - 30px) !important;
+    height: calc(100vh - 30px) !important;
+    resize: none !important;
+}
+
+.floating-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    background: #181818;
+    border-bottom: 1px solid var(--border);
+    cursor: grab;
+    user-select: none;
+}
+
+.floating-chart-header:active {
+    cursor: grabbing;
+}
+
+.floating-chart-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82em;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+}
+
+.floating-chart-title svg {
+    color: var(--accent);
+}
+
+.floating-chart-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68em;
+    font-weight: 600;
+    background: rgba(0, 230, 118, 0.12);
+    color: #00E676;
+    border: 1px solid rgba(0, 230, 118, 0.25);
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.floating-window-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.window-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    padding: 4px 7px;
+    font-size: 0.70em;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.window-action-btn:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+.window-action-btn.btn-export-png:hover,
+.window-action-btn.btn-export-csv:hover {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: var(--border-accent);
+}
+
+.window-action-btn.close-btn:hover {
+    background: var(--danger-dim);
+    color: var(--danger);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.floating-chart-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+}
+
+.floating-signals-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.floating-tools-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.floating-chart-canvas-container {
+    flex: 1;
+    position: relative;
+    padding: 8px 12px;
+    min-height: 200px;
+    background: #141414;
+}
+
+.floating-chart-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 12px;
+    background: #181818;
+    border-top: 1px solid var(--border);
+    user-select: none;
+}
+
+.floating-footer-telemetry {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.70em;
+    color: var(--text-secondary);
+}
+
+.floating-footer-telemetry strong {
+    color: var(--text-primary);
+    margin-left: 2px;
+}
+
+.floating-resize-grip {
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
 /* ========================
    METRICS TAB
    ======================== */
