@@ -88,7 +88,7 @@ def generate_chart(time_series: List[Dict[str, Any]], prev_time_series: List[Dic
     plt.close(fig)
     return img_buf
 
-def make_page_canvas(run_id: int):
+def make_page_canvas(run_id: Any = None):
     """
     Retorna uma função de callback para desenhar o rodapé institucional em cada página.
     """
@@ -104,21 +104,22 @@ def make_page_canvas(run_id: int):
         
         # Textos esquerdo e direito do rodapé
         canvas.drawString(doc.leftMargin, 25, "Simulador de Sistemas de Controle Dinâmico • Relatório PID")
-        page_str = f"Execução #{run_id} | Página {doc.page}"
+        exec_str = f"Execução #{run_id} | " if run_id is not None and str(run_id).strip() != "" else ""
+        page_str = f"{exec_str}Página {doc.page}"
         canvas.drawRightString(doc.pagesize[0] - doc.rightMargin, 25, page_str)
         
         canvas.restoreState()
     return page_decorator
 
 def generate_pdf_report(
-    run_id: int,
-    username: str,
-    level_name: str,
-    metrics: Dict[str, Any],
-    score: float,
-    code_snippet: str,
-    time_series: List[Dict[str, Any]],
-    created_at: datetime,
+    run_id: Any = 1,
+    username: str = "Anônimo",
+    level_name: str = "Carro na Pista 3D",
+    metrics: Dict[str, Any] = None,
+    score: float = 100.0,
+    code_snippet: str = "",
+    time_series: List[Dict[str, Any]] = None,
+    created_at: Optional[datetime] = None,
     prev_time_series: List[Dict[str, Any]] = None
 ) -> io.BytesIO:
     """
@@ -127,6 +128,12 @@ def generate_pdf_report(
     - Página 2: Título, telemetria gráfica temporal e tabela de elementos representados.
     - Página 3: Implementação e código do algoritmo de controle executado pelo estudante.
     """
+    if metrics is None:
+        metrics = {}
+    if time_series is None:
+        time_series = []
+    if created_at is None:
+        created_at = datetime.now()
     pdf_buf = io.BytesIO()
     doc = SimpleDocTemplate(
         pdf_buf,
@@ -219,9 +226,10 @@ def generate_pdf_report(
     elements.append(Spacer(1, 2))
 
     formatted_date = created_at.strftime("%d/%m/%Y às %H:%M:%S")
+    run_label = str(run_id) if str(run_id).startswith("#") else f"#{run_id}"
     meta_data = [
         [
-            Paragraph('<font size="7.5" color="#64748B"><b>EXECUÇÃO</b></font><br/><font size="11" color="#0F172A"><b>#' + str(run_id) + '</b></font>', meta_cell_style),
+            Paragraph('<font size="7.5" color="#64748B"><b>EXECUÇÃO</b></font><br/><font size="11" color="#0F172A"><b>' + run_label + '</b></font>', meta_cell_style),
             Paragraph('<font size="7.5" color="#64748B"><b>DATA / HORA</b></font><br/><font size="10" color="#0F172A">' + formatted_date + '</font>', meta_cell_style)
         ],
         [

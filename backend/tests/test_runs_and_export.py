@@ -1,46 +1,17 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.db.base_class import Base
-from app.api import deps
-
-# Configuração de Banco SQLite em Memória para Testes
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[deps.get_db] = override_get_db
-
-@pytest.fixture(autouse=True)
-def setup_db():
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture
 def client():
     return TestClient(app)
 
-def test_create_run_and_export_csv(client):
+def test_stateless_pdf_and_csv_generation(client):
     payload = {
+        "run_id": 1,
         "username": "AlunoTCC",
-        "level_name": "Carro na Pista",
+        "level_name": "Carro na Pista 3D",
         "rise_time": 1.25,
         "overshoot": 4.8,
         "settling_time": 2.10,
@@ -75,24 +46,29 @@ def test_create_run_and_export_csv(client):
         ]
     }
 
-    # 1. Cria a Run
-    response = client.post("/api/v1/runs/", json=payload)
-    assert response.status_code == 201
-    data = response.json()
-    assert "id" in data
-    assert data["username"] if "username" in data else True
-    run_id = data["id"]
+    # 1. Testa cálculo de pontuação (score)
+    score_resp = client.post("/api/v1/runs/score", json=payload)
+    assert score_resp.status_code == 200
+    score_data = score_resp.json()
+    assert "score" in score_data
+    assert score_data["score"] > 0
 
-    # 2. Testa exportação individual de CSV
-    csv_resp = client.get(f"/api/v1/runs/{run_id}/export-csv")
+    # 2. Testa geração do Relatório PDF Stateless
+    pdf_resp = client.post("/api/v1/runs/report", json=payload)
+    assert pdf_resp.status_code == 200
+    assert "application/pdf" in pdf_resp.headers["content-type"]
+    assert "X-Run-Score" in pdf_resp.headers
+    assert len(pdf_resp.content) > 1000  # PDF binário válido
+
+    # 3. Testa exportação Stateless de CSV
+    csv_resp = client.post("/api/v1/runs/export-csv", json=payload)
     assert csv_resp.status_code == 200
     assert "text/csv" in csv_resp.headers["content-type"]
     csv_text = csv_resp.text
     assert "time_s,position_y,setpoint_r,error_e,force_u,u_p,u_i,u_d,disturbance" in csv_text
     assert "720.000" in csv_text
 
-    # 3. Testa exportação do Relatório PDF
-    pdf_resp = client.get(f"/api/v1/runs/{run_id}/report")
-    assert pdf_resp.status_code == 200
-    assert "application/pdf" in pdf_resp.headers["content-type"]
-    assert len(pdf_resp.content) > 1000 # O PDF deve conter dados binários válidos
+    # 4. Testa rota raiz da API
+    root_resp = client.get("/")
+    assert root_resp.status_code == 200
+    assert root_resp.json()["status"] == "sucesso"

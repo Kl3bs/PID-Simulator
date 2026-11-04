@@ -21,17 +21,17 @@ A aplicação é dividida em duas camadas completamente desacopladas:
      - **CodeMirror (v5.65.16)**: editor de código com destaque de sintaxe JavaScript para algoritmos de controle customizados escritos pelo usuário.
    - Sem frameworks reativos pesados (sem React, Vue ou Angular) e sem etapa de compilação/bundling (sem Vite ou Webpack). Os scripts são importados diretamente no `index.html`.
 
-2. **Backend (API RESTful)**
+2. **Backend (API RESTful Stateless)**
    - Localização: `backend/app/`
-   - Tecnologia: **Python 3.9+**, framework **FastAPI**, **SQLAlchemy** (ORM) e **Pydantic** (validação de schemas).
-   - Banco de Dados: **PostgreSQL 15+** (ou SQLite em memória para a suíte de testes unitários).
+   - Tecnologia: **Python 3.9+**, framework **FastAPI** e **Pydantic** (validação de schemas).
+   - Sem Persistência em Banco: Operação puramente sem estado (stateless), voltada ao processamento matemático e geração em streaming de laudos em PDF e dados CSV.
    - Serviços de Domínio:
-     - `report_generator.py`: geração de relatórios técnicos de ensaio experimental em formato PDF de alta fidelidade visual usando `reportlab`.
+     - `report_generator.py`: geração de relatórios técnicos de ensaio experimental em formato PDF de alta fidelidade visual usando `reportlab` e `matplotlib`.
      - `score_service.py`: motor de avaliação e pontuação baseado em métricas de desempenho transitório (Overshoot, Rise Time, Settling Time, IAE, ISE, ITAE).
 
 3. **Infraestrutura e Execução**
-   - `docker-compose.yml`: orquestra simultaneamente os containers do PostgreSQL, da API FastAPI (`8081`) e do servidor estático Nginx do frontend (`8080`).
-   - `render.yaml`: manifesto oficial de Infraestrutura como Código (Blueprint) para deploy automatizado na nuvem do Render.
+   - `docker-compose.yml`: orquestra simultaneamente a API FastAPI (`8081`) e o servidor estático Nginx do frontend (`8080`), sem dependência de banco de dados.
+   - `render.yaml`: manifesto oficial de Infraestrutura como Código (Blueprint) para deploy automatizado gratuito na nuvem do Render.
 
 ---
 
@@ -39,16 +39,14 @@ A aplicação é dividida em duas camadas completamente desacopladas:
 
 ```text
 .
-├── backend/                  # Código-fonte da API FastAPI
+├── backend/                  # Código-fonte da API FastAPI (Stateless)
 │   ├── app/
-│   │   ├── api/              # Roteamento e injeção de dependências (deps.py)
+│   │   ├── api/              # Roteamento e endpoints (/api/v1/runs)
 │   │   ├── core/             # Configurações globais (config.py)
-│   │   ├── db/               # Sessão do SQLAlchemy e classe Base
-│   │   ├── models/           # Entidades do banco de dados (Run, User)
-│   │   ├── schemas/          # Schemas Pydantic para validação de entrada/saída
+│   │   ├── schemas/          # Schemas Pydantic para validação de telemetria
 │   │   ├── services/         # Regras de negócio (relatórios PDF, score)
 │   │   └── main.py           # Ponto de entrada FastAPI
-│   ├── tests/                # Testes automatizados com pytest e SQLite em memória
+│   ├── tests/                # Testes automatizados com pytest e TestClient
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/                 # Código-fonte do cliente Web
@@ -61,11 +59,11 @@ A aplicação é dividida em duas camadas completamente desacopladas:
 │   │   │   ├── ChartAnalytics.js     # Gráficos em tempo real e cálculo de integrais
 │   │   │   ├── ChartWindowManager.js # Janela flutuante e destacável dos gráficos
 │   │   │   ├── CodeEditor.js         # Integração com o CodeMirror
-│   │   │   ├── UIManager.js          # Bindings de eventos de interface do usuário
+│   │   │   ├── UIManager.js          # Bindings de interface e persistência via localStorage
 │   │   │   └── _archive/             # Implementações legadas de referência
 │   │   └── index.html        # Página principal da aplicação
 │   └── Dockerfile
-├── docker-compose.yml        # Orquestrador local multi-container
+├── docker-compose.yml        # Orquestrador local multi-container (FastAPI + Nginx)
 ├── render.yaml               # Configuração de deploy em produção (Render)
 ├── .gitignore                # Bloqueio estrito de arquivos locais e de agentes
 ├── AGENT.md                  # Este guia para agentes de IA
@@ -237,7 +235,7 @@ Dentro de `backend/`:
 pytest tests/ -v
 ```
 
-Os testes utilizam SQLite em memória (`sqlite:///:memory:`) e validam automaticamente criação de execuções (`runs`), cálculo de score, exportação CSV e geração de relatório PDF.
+Os testes validam de forma automatizada e stateless a geração de relatórios PDF com matplotlib/reportlab, o cálculo de score e a exportação CSV.
 
 ---
 

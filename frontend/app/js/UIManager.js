@@ -130,51 +130,57 @@ window.UIManager = {
       console.error("Erro ao inicializar CodeMirror:", e);
     }
 
-    // Modal - Exportar CSV
+    // Botão - Exportar CSV do Histórico (Stateless / Client-side)
     const exportBtn = document.getElementById("export-csv-btn");
     if (exportBtn) {
       exportBtn.addEventListener("click", () => {
         const selectedRadio = document.querySelector(
           'input[name="export_run_id"]:checked',
         );
-        let runIdParam = "";
         if (selectedRadio) {
-          if (String(selectedRadio.value).startsWith("local_")) {
-            alert(
-              "Não é possível exportar rodadas locais não salvas no banco de dados.",
-            );
-            return;
-          }
-          runIdParam = `&run_id=${selectedRadio.value}`;
+          this.downloadRunCSV(selectedRadio.value);
+          selectedRadio.checked = false;
+          return;
         }
 
-        let username = null;
-        if (window.SIM_STATE && window.SIM_STATE.currentUser) {
-          username = window.SIM_STATE.currentUser;
-        } else {
-          username = prompt(
-            "Digite seu username para exportar seu histórico (deixe em branco para exportar todos" +
-              (selectedRadio ? ", a run selecionada será filtrada" : "") +
-              "):",
-            "",
-          );
+        const history = window.SIM_STATE.runHistory || [];
+        if (history.length === 0) {
+          alert("Nenhuma simulação no histórico para exportar.");
+          return;
         }
 
-        if (username !== null) {
-          let url = `${API_BASE_URL}/api/v1/runs/export`;
-          let hasQuery = false;
+        const headers = [
+          "Run ID", "Estudante", "Fase", "Tempo de Subida (s)", "Sobressinal (%)",
+          "Tempo Acomodacao (s)", "Erro Final (m)", "Pontuacao", "Data"
+        ];
+        const rows = history.map((r) => [
+          r.id,
+          `"${r.username || "Anônimo"}"`,
+          `"${r.level || "Fase 1"}"`,
+          r.riseTime !== null && r.riseTime !== undefined ? Number(r.riseTime).toFixed(2) : "",
+          r.overshoot !== undefined && r.overshoot !== null ? Number(r.overshoot).toFixed(2) : "",
+          r.settlingTime !== null && r.settlingTime !== undefined ? Number(r.settlingTime).toFixed(2) : "",
+          r.finalError !== undefined && r.finalError !== null ? Math.abs(Number(r.finalError)).toFixed(2) : "",
+          r.score !== undefined && r.score !== null ? Number(r.score).toFixed(1) : "",
+          r.date ? new Date(r.date).toLocaleString("pt-BR") : ""
+        ].join(","));
 
-          if (username.trim() !== "") {
-            url += "?username=" + encodeURIComponent(username.trim());
-            hasQuery = true;
-          }
-          if (selectedRadio) {
-            url += (hasQuery ? "&" : "?") + "run_id=" + selectedRadio.value;
-          }
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `historico_simulacoes_pid_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      });
+    }
 
-          window.open(url, "_blank");
-          if (selectedRadio) selectedRadio.checked = false;
-        }
+    // Botão - Limpar Histórico do Navegador
+    const clearHistoryBtn = document.getElementById("clear-history-btn");
+    if (clearHistoryBtn) {
+      clearHistoryBtn.addEventListener("click", () => {
+        this.clearHistory();
       });
     }
 
@@ -337,41 +343,28 @@ window.UIManager = {
         updateAntiWindupUI(e.target.checked);
       });
     }
+
+    // Inicializa histórico salvo no localStorage
+    this.loadHistoryFromStorage();
   },
 
   loginUser: function (username) {
-    fetch(
-      `${API_BASE_URL}/api/v1/runs/?username=${encodeURIComponent(username)}`,
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro ao buscar histórico");
-        return res.json();
-      })
-      .then((data) => {
-        window.SIM_STATE.runHistory = data.map((r) => ({
-          id: r.id,
-          score: r.score,
-          level: r.level_name,
-          riseTime: r.rise_time,
-          overshoot: r.overshoot,
-          settlingTime: r.settling_time,
-          finalError: r.final_error,
-          codeSnippet: r.code_snippet,
-        }));
-        this.updateHistoryUI();
+    if (!username) return;
+    const clean = username.trim();
+    if (!clean) return;
 
-        const userDisplay = document.getElementById("user-display");
-        const loginBtn = document.getElementById("login-btn");
-        if (userDisplay && loginBtn) {
-          userDisplay.textContent = `Olá, ${username}`;
-          userDisplay.style.display = "inline";
-          loginBtn.style.display = "none";
-        }
-        if (window.SIM_STATE) {
-          window.SIM_STATE.currentUser = username;
-        }
-      })
-      .catch((err) => console.error("Falha no login", err));
+    if (window.SIM_STATE) {
+      window.SIM_STATE.currentUser = clean;
+    }
+    const userDisplay = document.getElementById("user-display");
+    const loginBtn = document.getElementById("login-btn");
+    if (userDisplay) {
+      userDisplay.textContent = `Olá, ${clean}`;
+      userDisplay.style.display = "inline";
+    }
+    if (loginBtn) {
+      loginBtn.style.display = "none";
+    }
   },
 
   showOnboarding: function () {
@@ -548,45 +541,214 @@ window.UIManager = {
     if (!historyBody) return;
     historyBody.innerHTML = "";
 
-    window.SIM_STATE.runHistory.forEach((run) => {
-      const isLocal = Boolean(
-        run.isLocal ||
-        (typeof run.id === "string" && run.id.startsWith("local_"))
-      );
+    const runs = window.SIM_STATE.runHistory || [];
+    if (runs.length === 0) {
+      const emptyRow = document.createElement("tr");
+      emptyRow.innerHTML = `<td colspan="9" style="text-align: center; color: #94A3B8; padding: 24px;">Nenhuma simulação registrada ainda. Execute uma rodada para ver os resultados.</td>`;
+      historyBody.appendChild(emptyRow);
+      return;
+    }
+
+    runs.forEach((run) => {
       const row = document.createElement("tr");
-      const riseTimeText = run.riseTime ? run.riseTime.toFixed(2) + "s" : "--";
+      const riseTimeText = run.riseTime ? Number(run.riseTime).toFixed(2) + "s" : "--";
       const overshootText = (run.overshoot !== undefined && run.overshoot !== null)
-        ? run.overshoot.toFixed(1) + "%"
+        ? Number(run.overshoot).toFixed(1) + "%"
         : "--";
-      const settlingTimeText = run.settlingTime ? run.settlingTime.toFixed(2) + "s" : "--";
+      const settlingTimeText = run.settlingTime ? Number(run.settlingTime).toFixed(2) + "s" : "--";
       const finalErrorText = (run.finalError !== undefined && run.finalError !== null)
-        ? Math.abs(run.finalError).toFixed(2)
+        ? Math.abs(Number(run.finalError)).toFixed(2)
         : "--";
 
       const scoreText = (run.score !== undefined && run.score !== null)
         ? `<strong>${Number(run.score).toFixed(1)}</strong>`
         : "--";
 
-      const actionHtml = isLocal
-        ? '<span style="color: #94a3b8; font-size: 0.9em;">Indisponível (Local)</span>'
-        : `<div style="display: flex; gap: 8px; align-items: center;">
-             <a href="${API_BASE_URL}/api/v1/runs/${run.id}/report" class="btn-download" style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;" download><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF</a>
-             <a href="${API_BASE_URL}/api/v1/runs/${run.id}/export-csv" class="btn-download" style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;" download><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</a>
-           </div>`;
+      const actionHtml = `
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button type="button" class="btn-download-pdf" data-run-id="${run.id}" style="background: none; border: 1px solid rgba(0, 168, 150, 0.4); border-radius: 4px; padding: 3px 8px; cursor: pointer; color: var(--accent, #00A896); font-weight: 600; font-size: 0.85em; display: inline-flex; align-items: center; gap: 4px;" title="Baixar Laudo Técnico PDF">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF
+          </button>
+          <button type="button" class="btn-download-csv" data-run-id="${run.id}" style="background: none; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; padding: 3px 8px; cursor: pointer; color: #CBD5E1; font-weight: 600; font-size: 0.85em; display: inline-flex; align-items: center; gap: 4px;" title="Exportar CSV da Rodada">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV
+          </button>
+        </div>
+      `;
 
       row.innerHTML = `
-                <td><input type="radio" name="export_run_id" value="${run.id}" style="cursor: pointer;"></td>
-                <td><strong>Run #${run.id}</strong></td>
-                <td><span class="run-level-badge">${run.level || "Fase 1"}</span></td>
-                <td>${riseTimeText}</td>
-                <td>${overshootText}</td>
-                <td>${settlingTimeText}</td>
-                <td>${finalErrorText}</td>
-                <td>${scoreText}</td>
-                <td>${actionHtml}</td>
-            `;
+        <td><input type="radio" name="export_run_id" value="${run.id}" style="cursor: pointer;"></td>
+        <td><strong>Run #${run.id}</strong></td>
+        <td><span class="run-level-badge">${run.level || "Fase 1"}</span></td>
+        <td>${riseTimeText}</td>
+        <td>${overshootText}</td>
+        <td>${settlingTimeText}</td>
+        <td>${finalErrorText}</td>
+        <td>${scoreText}</td>
+        <td>${actionHtml}</td>
+      `;
       historyBody.appendChild(row);
     });
+
+    historyBody.querySelectorAll(".btn-download-pdf").forEach((btn) => {
+      btn.onclick = () => {
+        const runId = btn.getAttribute("data-run-id");
+        this.downloadRunPDF(runId);
+      };
+    });
+
+    historyBody.querySelectorAll(".btn-download-csv").forEach((btn) => {
+      btn.onclick = () => {
+        const runId = btn.getAttribute("data-run-id");
+        this.downloadRunCSV(runId);
+      };
+    });
+  },
+
+  loadHistoryFromStorage: function () {
+    try {
+      const stored = localStorage.getItem("pid_simulator_run_history");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          window.SIM_STATE.runHistory = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn("Erro ao carregar histórico do localStorage:", e);
+      window.SIM_STATE.runHistory = [];
+    }
+    this.updateHistoryUI();
+  },
+
+  saveRunToStorage: function (payload, score, runId) {
+    const finalScore = score !== undefined && score !== null
+      ? score
+      : (this._calculateScore ? this._calculateScore(payload) : 100.0);
+
+    const calculatedId = runId || ((window.SIM_STATE.runHistory ? window.SIM_STATE.runHistory.length : 0) + 1);
+
+    const runData = {
+      id: calculatedId,
+      score: finalScore,
+      username: payload.username || (window.SIM_STATE && window.SIM_STATE.currentUser) || "Anônimo",
+      level: payload.level_name,
+      riseTime: payload.rise_time,
+      overshoot: payload.overshoot,
+      settlingTime: payload.settling_time,
+      finalError: payload.final_error,
+      iae: payload.iae,
+      ise: payload.ise,
+      itae: payload.itae,
+      codeSnippet: payload.code_snippet,
+      timeSeries: payload.time_series || [],
+      prevTimeSeries: payload.prev_time_series || null,
+      date: new Date().toISOString()
+    };
+
+    if (!window.SIM_STATE.runHistory) {
+      window.SIM_STATE.runHistory = [];
+    }
+    window.SIM_STATE.runHistory.push(runData);
+
+    try {
+      // Limita aos 50 registros mais recentes para economizar espaço
+      const historyToSave = window.SIM_STATE.runHistory.slice(-50);
+      localStorage.setItem("pid_simulator_run_history", JSON.stringify(historyToSave));
+    } catch (e) {
+      console.warn("Falha ao salvar histórico no localStorage:", e);
+    }
+
+    this.updateHistoryUI();
+  },
+
+  clearHistory: function () {
+    if (confirm("Deseja realmente limpar todo o histórico de simulações salvo no seu navegador?")) {
+      window.SIM_STATE.runHistory = [];
+      localStorage.removeItem("pid_simulator_run_history");
+      this.updateHistoryUI();
+    }
+  },
+
+  downloadRunPDF: async function (runId) {
+    const run = (window.SIM_STATE.runHistory || []).find((r) => String(r.id) === String(runId));
+    if (!run) {
+      alert("Rodada não encontrada no histórico.");
+      return;
+    }
+
+    const payload = {
+      run_id: run.id,
+      username: run.username || (window.SIM_STATE && window.SIM_STATE.currentUser) || "Anônimo",
+      level_name: run.level || "Carro na Pista 3D",
+      rise_time: run.riseTime,
+      overshoot: run.overshoot,
+      settling_time: run.settlingTime,
+      final_error: run.finalError,
+      iae: run.iae,
+      ise: run.ise,
+      itae: run.itae,
+      code_snippet: run.codeSnippet || "",
+      time_series: run.timeSeries || [],
+      prev_time_series: run.prevTimeSeries || null,
+      score: run.score,
+      created_at: run.date || new Date().toISOString()
+    };
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/runs/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Erro ao gerar relatório no backend.");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `relatorio_run_${run.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Falha ao baixar PDF:", err);
+      alert("Não foi possível gerar o PDF. Verifique se o backend está ativo.");
+    }
+  },
+
+  downloadRunCSV: function (runId) {
+    const run = (window.SIM_STATE.runHistory || []).find((r) => String(r.id) === String(runId));
+    if (!run || !run.timeSeries || run.timeSeries.length === 0) {
+      alert("Telemetria temporal não disponível para esta rodada.");
+      return;
+    }
+    this.exportTimeSeriesToCSV(run.timeSeries, `run_${run.id}_telemetria.csv`);
+  },
+
+  exportTimeSeriesToCSV: function (timeSeries, filename) {
+    const headers = [
+      "time_s", "position_y", "setpoint_r", "error_e", "force_u", "u_p", "u_i", "u_d", "disturbance"
+    ];
+    const rows = timeSeries.map((pt) => [
+      (pt.time || 0).toFixed(3),
+      (pt.position || 0).toFixed(3),
+      (pt.setpoint || 0).toFixed(3),
+      (pt.error || 0).toFixed(3),
+      (pt.force || 0).toFixed(3),
+      (pt.u_p || 0).toFixed(3),
+      (pt.u_i || 0).toFixed(3),
+      (pt.u_d || 0).toFixed(3),
+      (pt.disturbance || 0).toFixed(3)
+    ].join(","));
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", filename || "telemetria.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   },
 
   _modalPendingPayload: null,
@@ -653,62 +815,58 @@ window.UIManager = {
   },
 
   saveRunLocal: function (payload) {
-    const calculatedScore = this._calculateScore ? this._calculateScore(payload) : 100.0;
-    const runData = {
-      id: `local_${window.SIM_STATE.runHistory.length + 1}`,
-      score: calculatedScore,
-      level: payload.level_name,
-      riseTime: payload.rise_time,
-      overshoot: payload.overshoot,
-      settlingTime: payload.settling_time,
-      finalError: payload.final_error,
-      codeSnippet: payload.code_snippet,
-      isLocal: true,
-    };
-    window.SIM_STATE.runHistory.push(runData);
-    this.updateHistoryUI();
+    this.saveRunToStorage(payload);
   },
 
-  submitRunToBackend: function (payload) {
-    fetch(`${API_BASE_URL}/api/v1/runs/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro ao salvar simulação no backend.");
-        return res.json();
-      })
-      .then((data) => {
-        const runData = {
-          id: data.id,
-          score: data.score,
-          level: payload.level_name,
-          riseTime: payload.rise_time,
-          overshoot: payload.overshoot,
-          settlingTime: payload.settling_time,
-          finalError: payload.final_error,
-          codeSnippet: payload.code_snippet,
-          isLocal: false,
-        };
-        window.SIM_STATE.runHistory.push(runData);
-        this.updateHistoryUI();
+  submitRunToBackend: async function (payload) {
+    const nextRunId = ((window.SIM_STATE && window.SIM_STATE.runHistory) ? window.SIM_STATE.runHistory.length : 0) + 1;
+    payload.run_id = nextRunId;
 
-        // Dispara o download automático do PDF sem descarregar a página
-        const downloadLink = document.createElement("a");
-        downloadLink.href = `${API_BASE_URL}/api/v1/runs/${data.id}/report`;
-        downloadLink.download = `relatorio_run_${data.id}.pdf`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        downloadLink.remove();
-      })
-      .catch((err) => {
-        console.error("Erro na comunicação com o backend:", err);
-        alert(
-          "Falha na conexão com o backend. A rodada será salva localmente.",
-        );
-        this.saveRunLocal(payload);
+    // Busca a última rodada no histórico para o mesmo nível para fornecer a curva de comparação no PDF
+    const prevRun = (window.SIM_STATE.runHistory || [])
+      .slice()
+      .reverse()
+      .find((r) => r.level === payload.level_name && r.timeSeries && r.timeSeries.length > 0);
+    if (prevRun) {
+      payload.prev_time_series = prevRun.timeSeries;
+    }
+
+    const localScore = this._calculateScore ? this._calculateScore(payload) : 100.0;
+    payload.score = localScore;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/runs/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+
+      if (!res.ok) throw new Error("Erro ao gerar relatório no backend.");
+
+      // Score calibrado retornado no cabeçalho pelo backend
+      const serverScoreHeader = res.headers.get("X-Run-Score");
+      const finalScore = serverScoreHeader ? parseFloat(serverScoreHeader) : localScore;
+
+      // Dispara o download automático do PDF sem descarregar a página
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = blobUrl;
+      downloadLink.download = `relatorio_run_${nextRunId}.pdf`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      window.URL.revokeObjectURL(blobUrl);
+
+      // Salva rodada no histórico do localStorage
+      this.saveRunToStorage(payload, finalScore, nextRunId);
+    } catch (err) {
+      console.warn("Backend indisponível para gerar PDF:", err);
+      alert(
+        "A simulação foi concluída e salva no seu histórico local! (O servidor de geração de PDF não respondeu neste momento).",
+      );
+      this.saveRunToStorage(payload, localScore, nextRunId);
+    }
   },
 
   updateLeaderboardUI: function () {

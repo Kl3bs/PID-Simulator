@@ -338,7 +338,10 @@ return forca;</textarea>
         <div class="tab-content" id="history">
           <div class="history-header">
             <h3 class="history-title">Suas Tentativas</h3>
-            <button class="btn btn-secondary btn-export-csv" id="export-csv-btn">Exportar CSV</button>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-export-csv" id="export-csv-btn">Exportar CSV</button>
+              <button class="btn btn-secondary" id="clear-history-btn" title="Limpar histórico salvo no navegador">Limpar</button>
+            </div>
           </div>
           <div class="history-container">
             <table class="history-table" id="history-table">

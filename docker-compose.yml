@@ -1,16 +1,4 @@
 services:
-  db:
-    image: postgres:15-alpine
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: pid_simulator
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   backend:
     build:
       context: ./backend
@@ -22,10 +10,6 @@ services:
       - ./backend/requirements.txt:/app/requirements.txt
     env_file:
       - ./backend/.env
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/pid_simulator
-    depends_on:
-      - db
     
   frontend:
     build:
@@ -35,6 +19,3 @@ services:
       - "8080:80"
     volumes:
       - ./frontend/app:/usr/share/nginx/html
-
-volumes:
-  postgres_data:
