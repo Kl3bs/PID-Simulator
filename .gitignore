@@ -1,10 +1,8 @@
-# OS / IDE
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 
-# Agent tools and specifications wrapper (isolated from app)
 .agent-workspace/
 .agents/
 .claude/
@@ -14,10 +12,8 @@ docs/
 specs/
 skills-lock.json
 
-# TCC Monograph and Academic text files (isolated from app)
 tcc/
 
-# Python / Backend
 __pycache__/
 *.py[cod]
 *$py.class
@@ -29,7 +25,6 @@ venv/
 ENV/
 .pytest_cache/
 
-# Frontend / Node
 node_modules/
 npm-debug.log*
 yarn-debug.log*
